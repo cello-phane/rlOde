@@ -216,10 +216,10 @@ int main(int argc, char *argv[])
   contactgroup = dJointGroupCreate(0);
   dWorldSetGravity(world, 0, -9.8, 0);    // gravity
 
-  dWorldSetAutoDisableFlag (world, 1);
-  dWorldSetAutoDisableLinearThreshold (world, 0.05);
-  dWorldSetAutoDisableAngularThreshold (world, 0.05);
-  dWorldSetAutoDisableSteps (world, 4);
+  dWorldSetAutoDisableFlag(world, 1);
+  dWorldSetAutoDisableLinearThreshold(world, 0.05);
+  dWorldSetAutoDisableAngularThreshold(world, 0.05);
+  dWorldSetAutoDisableSteps(world, 4);
 
   vehicle* car = CreateVehicle(space, world);
 
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
   }
 
   float accel=0,steer=0;
-  Vector3 debug = {0};
+  /* Vector3 debug = {0}; */
   bool antiSway = true;
 
   // keep the physics fixed time in step with the render frame
@@ -327,6 +327,8 @@ int main(int argc, char *argv[])
       double z0 = 2.0f*(q[0]*q[3] + q[1]*q[2]);
       double z1 = 1.0f - 2.0f*(q[1]*q[1] + q[3]*q[3]);
       double roll = atan2f(z0, z1);
+      //assert(M_PI_2 == M_PI/2);//M_PI_2 is half of M_PI
+      //If the car is flipped, it's in a halfway rotated state?
       if ( fabs(roll) > (M_PI_2-0.001) ) {
         carFlipped++;
       } else {
@@ -390,10 +392,20 @@ int main(int argc, char *argv[])
         }
       }
       while (cp[1] < -20.0 || cp[1] > 20.0) {
-          dBodySetPosition(car->bodies[0], dRandReal() * 10 - 5,
-                           12 + rndf(1,2), dRandReal() * 10 - 5);
-          dBodySetLinearVel(car->bodies[0], 2, 1, 2);
-          dBodySetAngularVel(car->bodies[0], 2, 1, 2);
+        dBodySetPosition(car->bodies[0], dRandReal() * 10 - 5,
+                         12 + rndf(1,2), dRandReal() * 10 - 5);
+          dBodySetLinearVel(car->bodies[0], 1, 1, 1);
+          dBodySetAngularVel(car->bodies[0], 1, 1, 1);
+          if ( fabs(roll) > (M_PI_2-0.001) ) {
+            carFlipped++;
+          } else {
+            carFlipped=0;
+          }
+
+          // if the car roll >90 degrees for 100 frames then flip it
+          if (carFlipped > 100) {
+            unflipVehicle(car);
+          }
       }
       UpdateCamera(&camera, 1);              // Update camera
       if (IsKeyPressed(KEY_L)) { lights[0].enabled = !lights[0].enabled; UpdateLightValues(shader, lights[0]);}
@@ -453,7 +465,7 @@ int main(int argc, char *argv[])
       DrawText(TextFormat("accel %4.4f",accel), 10, 40, 20, WHITE);
       DrawText(TextFormat("steer %4.4f",steer), 10, 60, 20, WHITE);
       if (!antiSway) DrawText("Anti sway bars OFF", 10, 80, 20, RED);
-      DrawText(TextFormat("debug %4.4f %4.4f %4.4f",debug.x,debug.y,debug.z), 10, 100, 20, WHITE);
+      /* DrawText(TextFormat("debug %4.4f %4.4f %4.4f",debug.x,debug.y,debug.z), 10, 100, 20, WHITE); */
       DrawText(TextFormat("Phys steps per frame %i",pSteps), 10, 120, 20, WHITE);
       DrawText(TextFormat("Phys time per frame %i",physTime), 10, 140, 20, WHITE);
       DrawText(TextFormat("total time per frame %i",frameTime), 10, 160, 20, WHITE);
@@ -467,7 +479,7 @@ int main(int argc, char *argv[])
       DrawText(TextFormat("pos x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                           cp[0],
                           cp[1],
-                          cp[2]), 10, 240, 20, WHITE);
+                          cp[2]), 5, 240, 10, WHITE);
       //printf("%i %i\n",pSteps, numObj);
 
       EndDrawing();
