@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
   int screenWidth = 0;
   int screenHeight = 0;
   if (argc > 1) {
-    screenWidth = atoi(argv[2]);      
+    screenWidth = atoi(argv[2]);
   }
   else {
     screenWidth = 1920;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   else {
     screenHeight = 1080;
   }
-    
+
   // a space can have multiple "worlds" for example you might have different
   // sub levels that never interact, or the inside and outside of a building
   dSpaceID space;
@@ -310,7 +310,6 @@ int main(int argc, char *argv[])
   const double physSlice = 1.0 / 240.0;
   const int maxPsteps = 6;
   int carFlipped = 0; // number of frames car roll is >90
-
   //--------------------------------------------------------------------------------------
   //
   // Main game loop
@@ -321,7 +320,7 @@ int main(int argc, char *argv[])
       //--------------------------------------------------------------------------------------
       // Update
       //----------------------------------------------------------------------------------
-      
+
       // extract just the roll of the car
       // count how many frames its >90 degrees either way
       const dReal* q = dBodyGetQuaternion(car->bodies[0]);
@@ -382,17 +381,21 @@ int main(int argc, char *argv[])
             dBodyAddForce(obj[i], rndf(-f,f), f*4, rndf(-f,f));
           }
         }
-        if(cp[1]<-5) {
+        if(pos[1]<-10) {
           // teleport back if fallen off the ground
-          dBodySetPosition(car->bodies[0], 0,
-                           0, 3);
-          dBodySetLinearVel(car->bodies[0], 0, 0, 0);
-          dBodySetAngularVel(car->bodies[0], 0, 0, 0);
+          dBodySetPosition(obj[i], dRandReal() * 10 - 5,
+                           12 + rndf(1,2), dRandReal() * 10 - 5);
+          dBodySetLinearVel(obj[i], 5, 5, 5);
+          dBodySetAngularVel(obj[i], 5, 5, 5);
         }
       }
-      
+      while (cp[1] < -20.0 || cp[1] > 20.0) {
+          dBodySetPosition(car->bodies[0], dRandReal() * 10 - 5,
+                           12 + rndf(1,2), dRandReal() * 10 - 5);
+          dBodySetLinearVel(car->bodies[0], 2, 1, 2);
+          dBodySetAngularVel(car->bodies[0], 2, 1, 2);
+      }
       UpdateCamera(&camera, 1);              // Update camera
-
       if (IsKeyPressed(KEY_L)) { lights[0].enabled = !lights[0].enabled; UpdateLightValues(shader, lights[0]);}
 
       // update the light shader with the camera view position
@@ -461,7 +464,10 @@ int main(int argc, char *argv[])
       const double* v = dBodyGetLinearVel(car->bodies[0]);
       float vel = Vector3Length((Vector3){v[0],v[1],v[2]}) * 2.23693629f;
       DrawText(TextFormat("mph %.4f",vel), 10, 220, 20, WHITE);
-      DrawText(TextFormat("position %f",cp[1]), 10, 240, 20, WHITE);
+      DrawText(TextFormat("pos x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
+                          cp[0],
+                          cp[1],
+                          cp[2]), 10, 240, 20, WHITE);
       //printf("%i %i\n",pSteps, numObj);
 
       EndDrawing();
