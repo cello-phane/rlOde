@@ -391,21 +391,11 @@ int main(int argc, char *argv[])
           dBodySetAngularVel(obj[i], 5, 5, 5);
         }
       }
-      while (cp[1] < -20.0 || cp[1] > 20.0) {
+      while (cp[1] < -10.0 || cp[1] > 15.0) {
         dBodySetPosition(car->bodies[0], dRandReal() * 10 - 5,
                          12 + rndf(1,2), dRandReal() * 10 - 5);
-          dBodySetLinearVel(car->bodies[0], 1, 1, 1);
-          dBodySetAngularVel(car->bodies[0], 1, 1, 1);
-          if ( fabs(roll) > (M_PI_2-0.001) ) {
-            carFlipped++;
-          } else {
-            carFlipped=0;
-          }
-
-          // if the car roll >90 degrees for 100 frames then flip it
-          if (carFlipped > 100) {
-            unflipVehicle(car);
-          }
+          dBodySetLinearVel(car->bodies[0], 1, 3, 1);
+          dBodySetAngularVel(car->bodies[0], 1, 3, 1);
       }
       UpdateCamera(&camera, 1);              // Update camera
       if (IsKeyPressed(KEY_L)) { lights[0].enabled = !lights[0].enabled; UpdateLightValues(shader, lights[0]);}
