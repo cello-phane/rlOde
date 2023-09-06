@@ -20,13 +20,11 @@
  * SOFTWARE.
  *
  */
- 
+
 #include "raylib.h"
 #include "raymath.h"
 
 #include <ode/ode.h>
-
-
 
 // TODO extern for now - need to add function set these and keep them here...
 extern Model ball;
@@ -41,17 +39,17 @@ typedef struct vehicle {
 } vehicle;
 
 typedef struct geomInfo {
-    
+
     bool collidable;
 } geomInfo ;
-
 
 void rayToOdeMat(Matrix* mat, dReal* R);
 void odeToRayMat(const dReal* R, Matrix* matrix);
 void drawAllSpaceGeoms(dSpaceID space);
 void drawGeom(dGeomID geom);
 vehicle* CreateVehicle(dSpaceID space, dWorldID world);
-void updateVehicle(vehicle *car, float accel, float maxAccelForce, 
+void updateVehicle(vehicle *car, float accel, float maxAccelForce,
                     float steer, float steerFactor);
 void unflipVehicle (vehicle *car);
+void teleportVehicle(vehicle *car, dReal *position);
 bool checkColliding(dGeomID g);

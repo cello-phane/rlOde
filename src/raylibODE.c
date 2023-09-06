@@ -64,7 +64,6 @@ void MyDrawModel(Model model, Color tint)
     }
 }
 
-
 // these two just convert to column major and minor
 void rayToOdeMat(Matrix* m, dReal* R) {
     R[ 0] = m->m0;   R[ 1] = m->m4;   R[ 2] = m->m8;    R[ 3] = 0;
@@ -133,7 +132,6 @@ void drawAllSpaceGeoms(dSpaceID space)
     }
 }
 
-
 vehicle* CreateVehicle(dSpaceID space, dWorldID world)
 {
     // TODO these should be parameters
@@ -150,7 +148,6 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world)
     car->bodies[0] = dBodyCreate(world);
     dBodySetMass(car->bodies[0], &m);
     dBodySetAutoDisableFlag( car->bodies[0], 0 );
-
 
     car->geoms[0] = dCreateBox(space, carScale.x, carScale.y, carScale.z);
     dGeomSetBody(car->geoms[0], car->bodies[0]);
@@ -245,30 +242,28 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world)
     return car;
 }
 
-
 void updateVehicle(vehicle *car, float accel, float maxAccelForce,
                     float steer, float steerFactor)
 {
-        float target;
-        target = 0;
-        if (fabs(accel) > 0.1) target = maxAccelForce;
-        //dJointSetHinge2Param( car->joints[0], dParamVel2, -accel );
-        //dJointSetHinge2Param( car->joints[1], dParamVel2, accel );
-        dJointSetHinge2Param( car->joints[2], dParamVel2, -accel );
-        dJointSetHinge2Param( car->joints[3], dParamVel2, accel );
+		float target;
+		target = 0;
+		if (fabs(accel) > 0.1) target = maxAccelForce;
+		//dJointSetHinge2Param( car->joints[0], dParamVel2, -accel );
+		//dJointSetHinge2Param( car->joints[1], dParamVel2, accel );
+		dJointSetHinge2Param( car->joints[2], dParamVel2, -accel );
+		dJointSetHinge2Param( car->joints[3], dParamVel2, accel );
 
-        //dJointSetHinge2Param( car->joints[0], dParamFMax2, target );
-        //dJointSetHinge2Param( car->joints[1], dParamFMax2, target );
-        dJointSetHinge2Param( car->joints[2], dParamFMax2, target );
-        dJointSetHinge2Param( car->joints[3], dParamFMax2, target );
+		//dJointSetHinge2Param( car->joints[0], dParamFMax2, target );
+		//dJointSetHinge2Param( car->joints[1], dParamFMax2, target );
+		dJointSetHinge2Param( car->joints[2], dParamFMax2, target );
+		dJointSetHinge2Param( car->joints[3], dParamFMax2, target );
 
-        for(int i=0;i<2;i++) {
-            dReal v = steer - dJointGetHinge2Angle1 (car->joints[i]);
-            v *= steerFactor;
-            dJointSetHinge2Param (car->joints[i],dParamVel,v);
-        }
+		for(int i=0;i<2;i++) {
+				dReal v = steer - dJointGetHinge2Angle1 (car->joints[i]);
+				v *= steerFactor;
+				dJointSetHinge2Param (car->joints[i],dParamVel,v);
+		}
 }
-
 
 void unflipVehicle (vehicle *car)
 {
@@ -295,4 +290,17 @@ void unflipVehicle (vehicle *car)
         dBodySetPosition(car->bodies[i], pb[0], pb[1], pb[2]);
     }
 
+}
+
+void teleportVehicle(vehicle *car, dReal *position) {
+  // Set position
+    dBodySetPosition(car->bodies[0], position[0], position[1], position[2]);
+
+    // Stop all motion
+    dBodySetLinearVel(car->bodies[0], 0, 0, 0);  // Set linear velocity to zero
+    dBodySetAngularVel(car->bodies[0], 0, 0, 0); // Set angular velocity to zero
+
+    // Set forces and torques to zero
+    dBodySetForce(car->bodies[0], 0, 0, 0);
+    dBodySetTorque(car->bodies[0], 0, 0, 0);
 }

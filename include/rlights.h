@@ -6,7 +6,7 @@
 *
 *   #define RLIGHTS_IMPLEMENTATION
 *       Generates the implementation of the library into the included file.
-*       If not defined, the library is in header only mode and can be included in other headers 
+*       If not defined, the library is in header only mode and can be included in other headers
 *       or source files without problems. But only ONE file should hold the implementation.
 *
 *   LICENSE: zlib/libpng
@@ -38,18 +38,28 @@
 //----------------------------------------------------------------------------------
 #define         MAX_LIGHTS            4         // Max dynamic lights supported by shader
 
+/***********************************************************************************
+*
+*   RLIGHTS IMPLEMENTATION
+*
+************************************************************************************/
+
+#if defined(RLIGHTS_IMPLEMENTATION)
+
+#include "raylib.h"
+
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
 
 // Light data
-typedef struct {   
+typedef struct {
     int type;
     Vector3 position;
     Vector3 target;
     Color color;
     bool enabled;
-    
+
     // Shader locations
     int enabledLoc;
     int typeLoc;
@@ -77,19 +87,6 @@ void UpdateLightValues(Shader shader, Light light);         // Send light proper
 #ifdef __cplusplus
 }
 #endif
-
-#endif // RLIGHTS_H
-
-
-/***********************************************************************************
-*
-*   RLIGHTS IMPLEMENTATION
-*
-************************************************************************************/
-
-#if defined(RLIGHTS_IMPLEMENTATION)
-
-#include "raylib.h"
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -128,7 +125,7 @@ Light CreateLight(int type, Vector3 position, Vector3 target, Color color, Shade
         light.target = target;
         light.color = color;
 
-        // TODO: Below code doesn't look good to me, 
+        // TODO: Below code doesn't look good to me,
         // it assumes a specific shader naming and structure
         // Probably this implementation could be improved
         char enabledName[32] = "lights[x].enabled\0";
@@ -136,7 +133,7 @@ Light CreateLight(int type, Vector3 position, Vector3 target, Color color, Shade
         char posName[32] = "lights[x].position\0";
         char targetName[32] = "lights[x].target\0";
         char colorName[32] = "lights[x].color\0";
-        
+
         // Set location name [x] depending on lights count
         enabledName[7] = '0' + lightsCount;
         typeName[7] = '0' + lightsCount;
@@ -151,7 +148,7 @@ Light CreateLight(int type, Vector3 position, Vector3 target, Color color, Shade
         light.colorLoc = GetShaderLocation(shader, colorName);
 
         UpdateLightValues(shader, light);
-        
+
         lightsCount++;
     }
 
@@ -159,7 +156,7 @@ Light CreateLight(int type, Vector3 position, Vector3 target, Color color, Shade
 }
 
 // Send light properties to shader
-// NOTE: Light shader locations should be available 
+// NOTE: Light shader locations should be available
 void UpdateLightValues(Shader shader, Light light)
 {
     // Send to shader light enabled state and type
@@ -175,9 +172,10 @@ void UpdateLightValues(Shader shader, Light light)
     SetShaderValue(shader, light.targetLoc, target, SHADER_UNIFORM_VEC3);
 
     // Send to shader light color values
-    float color[4] = { (float)light.color.r/(float)255, (float)light.color.g/(float)255, 
+    float color[4] = { (float)light.color.r/(float)255, (float)light.color.g/(float)255,
                        (float)light.color.b/(float)255, (float)light.color.a/(float)255 };
     SetShaderValue(shader, light.colorLoc, color, SHADER_UNIFORM_VEC4);
 }
 
 #endif // RLIGHTS_IMPLEMENTATION
+#endif // RLIGHTS_H

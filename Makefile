@@ -1,28 +1,31 @@
-
 APPNAME:=$(shell basename `pwd`)
+CC=cc
+CXX=c++
+COMPILER=$(CC)
 
-INSTR:= -fsanitize=address,leak,undefined,pointer-compare,pointer-subtract
-INSTR+= -fno-omit-frame-pointer --enable-ou --enable-libccd --with-box-cylinder=libccd --with-drawstuff=none --disable-demos --with-libccd=internal
+LDFLAGS = -L./lib
+LDLIBS = -lraylibdll -lode_doubled
 
-LDFLAGS:=-L. -lm -pthread
-LDFLAGS+=-lraylib -lode_double -lstdc++
-
-CFLAGS:= -Wfatal-errors -pedantic -Wall -Wextra -Werror -I ../ode-0.16.3/include/ode -I ../ode-0.16.3/include -I ./include
+CFLAGS:= -Iode-0.16.4/include/ode -Iode-0.16.4/include -Iinclude/raylib -Iinclude -I./
 CFLAGS+= -std=c99 -DPLATFORM_DESKTOP
 
 SRC:=$(wildcard src/*.c)
 OBJ:=$(SRC:src/%.c=build/%.o)
 INC:=$(wildcard include/*.h)
 
-CC=gcc
+#if gcc
+ifeq ($(filter gcc g++, $(CC) $(CXX)), gcc g++)
+    LDLIBS += -pthread -lstdc++
+endif
 
+# set to release or debug
 all: release
 
 $(APPNAME): $(OBJ)
-	$(CC) $(OBJ) -o $(APPNAME) $(LDFLAGS)
+	$(COMPILER) $(OBJ) -o $(APPNAME) $(LDFLAGS) $(LDLIBS)
 
 $(OBJ): build/%.o : src/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(COMPILER) $(CFLAGS) -c $< -o $@
 
 .PHONY: debug release inst
 
@@ -30,14 +33,8 @@ debug: CFLAGS+= -g
 debug:
 	@echo "*** made DEBUG target ***"
 
-release: CFLAGS+= -O3
 release:
 	@echo "*** made RELEASE target ***"
-
-inst: CFLAGS+= -g $(INSTR)
-inst: LDFLAGS+= $(INSTR)
-inst:
-	@echo "*** made INSTRUMENTATION target ***"
 
 release: CFLAGS+= -Ofast
 
@@ -45,7 +42,7 @@ debug release inst: clean $(APPNAME)
 
 .PHONY:	clean
 clean:
-	rm build/* -f
+	rm build/* -rf
 	rm $(APPNAME) -f
 
 style: $(SRC) $(INC)
