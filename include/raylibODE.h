@@ -51,5 +51,4 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world);
 void updateVehicle(vehicle *car, float accel, float maxAccelForce,
                     float steer, float steerFactor);
 void unflipVehicle (vehicle *car);
-void teleportVehicle(vehicle *car, dReal *position);
 bool checkColliding(dGeomID g);

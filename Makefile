@@ -1,22 +1,18 @@
-APPNAME:=$(shell basename `pwd`)
-CC=cc
-CXX=c++
-COMPILER=$(CC)
+APPNAME:=rlOde.exe
+CC=gcc
+CXX=g++
+COMPILER=$(CXX)
 
-LDFLAGS = -L./lib
-LDLIBS = -lraylibdll -lode_doubled
+LDFLAGS = -Llib
+LDLIBS := -l:raylib.dll -l:ode_double.dll -lwinmm
 
-CFLAGS:= -Iode-0.16.4/include/ode -Iode-0.16.4/include -Iinclude/raylib -Iinclude -I./
-CFLAGS+= -std=c99 -DPLATFORM_DESKTOP
+CFLAGS:= -Iode/include/ode -Iode/include -Iinclude/raylib -Iinclude -I./
+CFLAGS+= -std=c++20 -DPLATFORM_DESKTOP
 
-SRC:=$(wildcard src/*.c)
-OBJ:=$(SRC:src/%.c=build/%.o)
+SRC:=$(wildcard src/*.cpp)
+OBJ:=$(SRC:src/%.cpp=build/%.obj)
 INC:=$(wildcard include/*.h)
-
-#if gcc
-ifeq ($(filter gcc g++, $(CC) $(CXX)), gcc g++)
-    LDLIBS += -pthread -lstdc++
-endif
+INC+=$(wildcard ode/include/ode/*.h)
 
 # set to release or debug
 all: release
@@ -24,7 +20,7 @@ all: release
 $(APPNAME): $(OBJ)
 	$(COMPILER) $(OBJ) -o $(APPNAME) $(LDFLAGS) $(LDLIBS)
 
-$(OBJ): build/%.o : src/%.c
+$(OBJ): build/%.obj : src/%.cpp
 	$(COMPILER) $(CFLAGS) -c $< -o $@
 
 .PHONY: debug release inst
