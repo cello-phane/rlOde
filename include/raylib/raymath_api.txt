@@ -1,0 +1,132 @@
+
+Defines found: 13
+
+Define 001: RAYMATH_H
+  Name: RAYMATH_H
+  Type: GUARD
+  Value: 
+  Description: 
+Define 002: RMAPI
+  Name: RMAPI
+  Type: UNKNOWN
+  Value: __declspec(dllexport) extern inline
+  Description: We are building raylib as a Win32 shared library (.dll).
+Define 003: PI
+  Name: PI
+  Type: FLOAT
+  Value: 3.14159265358979323846
+  Description: 
+Define 004: EPSILON
+  Name: EPSILON
+  Type: FLOAT
+  Value: 0.000001
+  Description: 
+Define 005: DEG2RAD
+  Name: DEG2RAD
+  Type: FLOAT_MATH
+  Value: (PI/180.0f)
+  Description: 
+Define 006: RAD2DEG
+  Name: RAD2DEG
+  Type: FLOAT_MATH
+  Value: (180.0f/PI)
+  Description: 
+Define 007: MatrixToFloat(mat)
+  Name: MatrixToFloat(mat)
+  Type: MACRO
+  Value: (MatrixToFloatV(mat).v)
+  Description: 
+Define 008: Vector3ToFloat(vec)
+  Name: Vector3ToFloat(vec)
+  Type: MACRO
+  Value: (Vector3ToFloatV(vec).v)
+  Description: 
+Define 009: RL_VECTOR2_TYPE
+  Name: RL_VECTOR2_TYPE
+  Type: GUARD
+  Value: 
+  Description: 
+Define 010: RL_VECTOR3_TYPE
+  Name: RL_VECTOR3_TYPE
+  Type: GUARD
+  Value: 
+  Description: 
+Define 011: RL_VECTOR4_TYPE
+  Name: RL_VECTOR4_TYPE
+  Type: GUARD
+  Value: 
+  Description: 
+Define 012: RL_QUATERNION_TYPE
+  Name: RL_QUATERNION_TYPE
+  Type: GUARD
+  Value: 
+  Description: 
+Define 013: RL_MATRIX_TYPE
+  Name: RL_MATRIX_TYPE
+  Type: GUARD
+  Value: 
+  Description: 
+
+Structures found: 6
+
+Struct 01: Vector2 (2 fields)
+  Name: Vector2
+  Description: Vector2 type
+  Field[1]: float x 
+  Field[2]: float y 
+Struct 02: Vector3 (3 fields)
+  Name: Vector3
+  Description: Vector3 type
+  Field[1]: float x 
+  Field[2]: float y 
+  Field[3]: float z 
+Struct 03: Vector4 (4 fields)
+  Name: Vector4
+  Description: Vector4 type
+  Field[1]: float x 
+  Field[2]: float y 
+  Field[3]: float z 
+  Field[4]: float w 
+Struct 04: Matrix (16 fields)
+  Name: Matrix
+  Description: Matrix type (OpenGL style 4x4 - right handed, column major)
+  Field[1]: float m0 // Matrix first row (4 components)
+  Field[2]: float m4 // Matrix first row (4 components)
+  Field[3]: float m8 // Matrix first row (4 components)
+  Field[4]: float m12 // Matrix first row (4 components)
+  Field[5]: float m1 // Matrix second row (4 components)
+  Field[6]: float m5 // Matrix second row (4 components)
+  Field[7]: float m9 // Matrix second row (4 components)
+  Field[8]: float m13 // Matrix second row (4 components)
+  Field[9]: float m2 // Matrix third row (4 components)
+  Field[10]: float m6 // Matrix third row (4 components)
+  Field[11]: float m10 // Matrix third row (4 components)
+  Field[12]: float m14 // Matrix third row (4 components)
+  Field[13]: float m3 // Matrix fourth row (4 components)
+  Field[14]: float m7 // Matrix fourth row (4 components)
+  Field[15]: float m11 // Matrix fourth row (4 components)
+  Field[16]: float m15 // Matrix fourth row (4 components)
+Struct 05: float3 (1 fields)
+  Name: float3
+  Description: NOTE: Helper types to be used instead of array return types for *ToFloat functions
+  Field[1]: float[3] v 
+Struct 06: float16 (1 fields)
+  Name: float16
+  Description: 
+  Field[1]: float[16] v 
+
+Aliases found: 1
+
+Alias 001: Quaternion
+  Type: Vector4
+  Name: Quaternion
+  Description: Quaternion type
+
+Enums found: 0
+
+
+Callbacks found: 0
+
+
+Functions found: 0
+
