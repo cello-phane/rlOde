@@ -300,3 +300,16 @@ void unflipVehicle (vehicle *car)
         dBodySetPosition(car->bodies[i], pb[0], pb[1], pb[2]);
     }
 }
+
+void teleportVehicle(vehicle *car, dReal *position) {
+  // Set position
+    dBodySetPosition(car->bodies[0], position[0], position[1], position[2]);
+
+    // Stop all motion
+    dBodySetLinearVel(car->bodies[0], 0, 0, 0);  // Set linear velocity to zero
+    dBodySetAngularVel(car->bodies[0], 0, 0, 0); // Set angular velocity to zero
+
+    // Set forces and torques to zero
+    dBodySetForce(car->bodies[0], 0, 0, 0);
+    dBodySetTorque(car->bodies[0], 0, 0, 0);
+}

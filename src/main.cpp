@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 // #include <utility>
-#define XBOX360_NAME_ID     "Xbox 360 Controller"
+
 #ifdef _WIN32
 #ifdef _MSC_VER
 #pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
@@ -120,7 +120,7 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
   for (i = 0; i < MAX_CONTACTS; i++) {
     contact[i].surface.mode = dContactSlip1 | dContactSlip2 | dContactSoftERP |
       dContactSoftCFM | dContactApprox1;
-    contact[i].surface.mu = 1000;
+    contact[i].surface.mu = 2000;
     contact[i].surface.slip1 = 0.0001;
     contact[i].surface.slip2 = 0.001;
     contact[i].surface.soft_erp = 0.5;
@@ -141,6 +141,10 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
 }
 
 int main(int argc, char* argv[]) {
+  if (IsGamepadAvailable(0)) {
+  #define XBOX360_NAME_ID     "Xbox 360 Controller"
+  }
+
   assert(sizeof(dReal) == sizeof(double));
   srand(time(NULL));
   
@@ -332,153 +336,189 @@ int main(int argc, char* argv[]) {
   // Main game loop
   //
   //-------------------------------------------------------------------------------------
+  if (IsGamepadAvailable(0)) {
+    Texture2D texXboxPad = LoadTexture("data/xbox.png");
+  }
+  
   while (!WindowShouldClose()) {// Detect window close button or ESC key
-      //---------------------------------------------------------------------------------
-      // Update
-      //---------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------
+    // Update
+    //---------------------------------------------------------------------------------
 
-      // extract just the roll of the car
-      // count how many frames its >90 degrees either way
-      const dReal *q = dBodyGetQuaternion(car->bodies[0]);
-      double z0 = 2.0f * (q[0] * q[3] + q[1] * q[2]);
-      double z1 = 1.0f - 2.0f * (q[1] * q[1] + q[3] * q[3]);
-      double roll = atan2f(z0, z1);
-      // assert(M_PI_2 == M_PI/2);//M_PI_2 is half of M_PI
-      // If the car is flipped, it's in a halfway rotated state?
-      if (fabs(roll) > (M_PI_2 - 0.001)) {
-        carFlipped++;
-      } else {
-        carFlipped = 0;
-      }
+    // extract just the roll of the car
+    // count how many frames its >90 degrees either way
+    const dReal *q = dBodyGetQuaternion(car->bodies[0]);
+    double z0 = 2.0f * (q[0] * q[3] + q[1] * q[2]);
+    double z1 = 1.0f - 2.0f * (q[1] * q[1] + q[3] * q[3]);
+    double roll = atan2f(z0, z1);
+    // assert(M_PI_2 == M_PI/2);//M_PI_2 is half of M_PI
+    // If the car is flipped, it's in a halfway rotated state?
+    if (fabs(roll) > (M_PI_2 - 0.001)) {
+      carFlipped++;
+    } else {
+      carFlipped = 0;
+    }
 
-      // if the car roll >90 degrees for 100 frames then flip it
-      if (carFlipped > 100) {
-        unflipVehicle(car);
-      }
+    // if the car roll >90 degrees for 100 frames then flip it
+    if (carFlipped > 100) {
+      unflipVehicle(car);
+    }
 
-      accel *= .99;
-      if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
+    accel *= .99;
+    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
+      accel += 10;
+    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))
+      accel -= 10;
+    if (accel > 50)
+      accel = 50;
+    if (accel < -15)
+      accel = -15;
+
+    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
+      steer -= .1;
+    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
+      steer += .1;
+    if ((!IsKeyDown(KEY_RIGHT) || !IsKeyDown(KEY_D)) &&
+        (!IsKeyDown(KEY_LEFT) || !IsKeyDown(KEY_A)))
+      steer *= .5;
+    if (steer > .5)
+      steer = .5;
+    if (steer < -.5)
+      steer = -.5;
+
+    if (IsGamepadAvailable(0)) {
+      float lstick_lr = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+      float lstick_ud = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+      float rstick_lr = GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
+      float rstick_ud = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+      if (lstick_ud < 0)
         accel += 10;
-      if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))
+      if (lstick_ud > 0)
         accel -= 10;
       if (accel > 50)
         accel = 50;
       if (accel < -15)
         accel = -15;
-
-      if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
-        steer -= .1;
-      if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
-        steer += .1;
-      if ((!IsKeyDown(KEY_RIGHT) || !IsKeyDown(KEY_D)) &&
-          (!IsKeyDown(KEY_LEFT) || !IsKeyDown(KEY_A)))
+      if (rstick_lr > 0)
+        steer -= .05;
+      if (rstick_lr < 0)
+        steer += .05;
+      if (rstick_lr == 0)
         steer *= .5;
       if (steer > .5)
         steer = .5;
       if (steer < -.5)
         steer = -.5;
+    }
 
-      updateVehicle(car, accel, 800.0, steer, 10.0);
+    updateVehicle(car, accel, 800.0, steer, 10.0);
 
-      const dReal *cp = dBodyGetPosition(car->bodies[0]);
-      double cp_x = cp[0];
-      double cp_y = cp[1];
-      double cp_z = cp[2];
-      Vector3 cam_target = {static_cast<float>(cp_x), static_cast<float>(cp_y), static_cast<float>(cp_z)};
-      camera.target = cam_target;
+    const dReal *cp = dBodyGetPosition(car->bodies[0]);
+    float cp_x = static_cast<float>(cp[0]);
+    float cp_y = static_cast<float>(cp[1]);
+    float cp_z = static_cast<float>(cp[2]);
+    Vector3 cam_target = {cp_x, cp_y, cp_z};
+    camera.target = cam_target;
 
-      float lerp = 0.1f;
+    float lerp = 0.1f;
 
-      dVector3 co;
-      dBodyGetRelPointPos(car->bodies[0], -8, 3, 0, co);
+    dVector3 co;
+    dBodyGetRelPointPos(car->bodies[0], -8, 3, 0, co);
 
-      camera.position.x -= (camera.position.x - co[0]) * lerp; // * (1/ft);
-      camera.position.y -= (camera.position.y - co[1]) * lerp; // * (1/ft);
-      camera.position.z -= (camera.position.z - co[2]) * lerp; // * (1/ft);
-      UpdateCamera(&camera, 0);
+    camera.position.x -= (camera.position.x - co[0]) * lerp; // * (1/ft);
+    camera.position.y -= (camera.position.y - co[1]) * lerp; // * (1/ft);
+    camera.position.z -= (camera.position.z - co[2]) * lerp; // * (1/ft);
+    UpdateCamera(&camera, 0);
       
       
-      // Levitate the objects
-      for (int i = 0; i < numObj; i++) {
-        const dReal *pos = dBodyGetPosition(obj[i]);
-        if (IsKeyDown(KEY_SPACE)) {
-          // apply force if the key Spacebar is held down
-          const dReal *v = dBodyGetLinearVel(obj[i]);
-          if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity and don't let it get too high
-            if (!dBodyIsEnabled(obj[i])) {
-              dBodyEnable(obj[i]); // case its gone to sleep
-            }
-            dMass mass;
-            dBodyGetMass(obj[i], &mass);
-            // give some object more force than others
-            // ??? cast to float both i and numbObj at this divsion
-            float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
-            dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
+    // Levitate the objects
+    for (int i = 0; i < numObj; i++) {
+      const dReal *pos = dBodyGetPosition(obj[i]);
+      if (IsKeyDown(KEY_SPACE) || (IsGamepadAvailable(0) && IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
+        // apply force if the key Spacebar is held down
+        const dReal *v = dBodyGetLinearVel(obj[i]);
+        if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity and don't let it get too high
+          if (!dBodyIsEnabled(obj[i])) {
+            dBodyEnable(obj[i]); // case its gone to sleep
           }
-        }
-        //Fall back down?
-        if (pos[1] < -10) {
-          dBodySetPosition(obj[i], dRandReal() * 10 - 5, 12 + rndf(1, 2),
-                           dRandReal() * 10 - 5);
-          dBodySetLinearVel(obj[i], 5, 5, 5);
-          dBodySetAngularVel(obj[i], 5, 5, 5);
+          dMass mass;
+          dBodyGetMass(obj[i], &mass);
+          // give some object more force than others
+          // ??? cast to float both i and numbObj at this divsion
+          float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
+          dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
         }
       }
+      //Fall back down?
+      if (pos[1] < -10) {
+        dBodySetPosition(obj[i], dRandReal() * 10 - 5, 12 + rndf(1, 2),
+                         dRandReal() * 10 - 5);
+        dBodySetLinearVel(obj[i], 5, 5, 5);
+        dBodySetAngularVel(obj[i], 5, 5, 5);
+      }
+    }
 
-      // Levitate the car if Key Left Shift is held down
-      if (IsKeyDown(KEY_LEFT_SHIFT)) {
-        for (int i = 0; i < 6; i++) {
-          dMass cm;
-          dBodyGetMass(car->bodies[i], &cm);
-          float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
-          if (i == 3) {
-            f += f*0.5;
-          }
-          dBodyAddForce(car->bodies[i], 0, f * 10, 0);
+    // Levitate the car if Key Left Shift is held down
+    if (IsKeyDown(KEY_LEFT_SHIFT) || (IsGamepadAvailable(0) && IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
+      for (int i = 0; i < 6; i++) {
+        dMass cm;
+        dBodyGetMass(car->bodies[i], &cm);
+        float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
+        if (i == 3) {
+          f += f*0.5;
         }
+        dBodyAddForce(car->bodies[i], 0, f * 10, 0);
       }
+    }
       
-      if (IsKeyPressed(KEY_L)) {
-        lights[0].enabled = !lights[0].enabled;
-        UpdateLightValues(shader, lights[0]);
+    if (IsKeyPressed(KEY_L) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
+      lights[0].enabled = !lights[0].enabled;
+      UpdateLightValues(shader, lights[0]);
+    }
+
+    //Fallen off the grid/ground
+    while (cp[1] < -10.0 || cp[1] > 15.0) {
+      // teleport back if fallen off the ground
+      dVector3 init_position = {8.0, 13.0, 60.0};
+      teleportVehicle(car, init_position);
+    }
+
+    // update the light shader with the camera view position
+    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
+                   &camera.position.x, SHADER_UNIFORM_VEC3);
+
+    frameTime += GetFrameTime();
+    int pSteps = 0;
+    physTime = GetTime();
+
+    while (frameTime > physSlice) {
+      // check for collisions
+      // TODO use 2nd param data to pass custom structure with
+      // world and space ID's to avoid use of globals...
+      dSpaceCollide(space, 0, &nearCallback);
+
+      // step the world
+      dWorldQuickStep(world, physSlice); // NB fixed time step is important
+      dJointGroupEmpty(contactgroup);
+
+      frameTime -= physSlice;
+      pSteps++;
+      if (pSteps > maxPsteps) {
+        frameTime = 0;
+        break;
       }
+    }
 
-      // update the light shader with the camera view position
-      SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
-                     &camera.position.x, SHADER_UNIFORM_VEC3);
+    physTime = GetTime() - physTime;
 
-      frameTime += GetFrameTime();
-      int pSteps = 0;
-      physTime = GetTime();
-
-      while (frameTime > physSlice) {
-        // check for collisions
-        // TODO use 2nd param data to pass custom structure with
-        // world and space ID's to avoid use of globals...
-        dSpaceCollide(space, 0, &nearCallback);
-
-        // step the world
-        dWorldQuickStep(world, physSlice); // NB fixed time step is important
-        dJointGroupEmpty(contactgroup);
-
-        frameTime -= physSlice;
-        pSteps++;
-        if (pSteps > maxPsteps) {
-          frameTime = 0;
-          break;
-        }
-      }
-
-      physTime = GetTime() - physTime;
-
-      //---------------------------------------------------------------------------------
-      // Draw
-      //---------------------------------------------------------------------------------
-    Texture2D texXboxPad = LoadTexture("data/xbox.png");
+    //---------------------------------------------------------------------------------
+    // Draw
+    //---------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
-
-    int gamepad = 0; // which gamepad to display
+    if (IsGamepadAvailable(0)) {
+      int gamepad = 0; // which gamepad to display
+    }
     BeginDrawing();
 
     ClearBackground(BLACK);
@@ -510,9 +550,9 @@ int main(int argc, char* argv[]) {
      * 10, 100, 20, WHITE); */
     // DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 120, 20, WHITE);
     // DrawText(TextFormat("Phys time per frame %i", physTime), 10, 140, 20,
-             // WHITE);
+    // WHITE);
     // DrawText(TextFormat("total time per frame %i", frameTime), 10, 160, 20,
-             // WHITE);
+    // WHITE);
     DrawText(TextFormat("objects %i", numObj), 10, 35, 10, WHITE);
 
     DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 130, 15, WHITE);
@@ -527,12 +567,12 @@ int main(int argc, char* argv[]) {
     DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n", cp[0], cp[1], cp[2]), 5, 140, 20, WHITE);
     // printf("%i %i\n",pSteps, numObj);
 
+    // if (IsGamepadAvailable(gamepad))
+    //   {
 
     // if (IsKeyPressed(KEY_LEFT) && gamepad > 0) gamepad--;
     // if (IsKeyPressed(KEY_RIGHT)) gamepad++;
 
-    // if (IsGamepadAvailable(gamepad))
-    //   {
     //     DrawText(TextFormat("GP%d: %s", gamepad, GetGamepadName(gamepad)), 10, 10, 10, BLACK);
 
     //     if (true)
@@ -588,6 +628,7 @@ int main(int argc, char* argv[]) {
     //         //DrawText(TextFormat("Xbox axis LT: %02.02f", GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_TRIGGER)), 10, 40, 10, BLACK);
     //         //DrawText(TextFormat("Xbox axis RT: %02.02f", GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_TRIGGER)), 10, 60, 10, BLACK);
     //       }
+
     EndDrawing();
 
   }//End While WindowShouldClose

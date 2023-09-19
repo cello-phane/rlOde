@@ -52,3 +52,4 @@ void updateVehicle(vehicle *car, float accel, float maxAccelForce,
                     float steer, float steerFactor);
 void unflipVehicle (vehicle *car);
 bool checkColliding(dGeomID g);
+void teleportVehicle(vehicle *car, dReal *position);
