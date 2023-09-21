@@ -11,27 +11,39 @@ set(RL_INCLUDE_DIR include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
 #TODO move it later to same include path as raylib
 # Also find a way to fetch or find_package for ODE
-set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/ode_double.lib)
+set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
 
+##set to on if you want to download and compile Raylib
+option(FETCH_RL OFF)
 
-find_library(RAYLIB_LIB raylib)
-if(NOT ${RAYLIB_LIB})
-#----------Fetch raylib----------#
-include(FetchContent)
-set(FETCHCONTENT_QUIET FALSE)
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
+if(FETCH_RL)
+    ##----------Fetch raylib----------#
+    include(FetchContent)
+    set(FETCHCONTENT_QUIET FALSE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
+    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
-FetchContent_Declare(
-   raylib
-   GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-   GIT_TAG "master"
-   GIT_PROGRESS TRUE
-)
-FetchContent_MakeAvailable(raylib)
+    FetchContent_Declare(
+        raylib
+        GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+        GIT_TAG "master"
+        GIT_PROGRESS TRUE
+    )
+    FetchContent_MakeAvailable(raylib)
+    set(RAYLIB_LIB raylib)
+else()
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+  endif()  
 endif()
 
-list(APPEND libs raylib ${ODE_LIB} opengl32 gdi32 winmm)
+# unset(FETCH_RL CACHE)
+
+list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB} opengl32 gdi32 winmm)
 
 # Add source files
 set(SRC_FILES src/main.cpp src/raylibODE.cpp)
@@ -68,7 +80,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${libs})
-# WinMM is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER 
+# WinMM is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 # Set the target as the default in Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
