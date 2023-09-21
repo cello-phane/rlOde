@@ -13,19 +13,23 @@ set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
 # Also find a way to fetch or find_package for ODE
 set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/ode_double.lib)
 
-#----------Fetch raylib----------#
-# include(FetchContent)
-# set(FETCHCONTENT_QUIET FALSE)
-# set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-# set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
-# FetchContent_Declare(
-#    raylib
-#    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-#    GIT_TAG "master"
-#    GIT_PROGRESS TRUE
-# )
-# FetchContent_MakeAvailable(raylib)
+find_library(RAYLIB_LIB raylib)
+if(NOT ${RAYLIB_LIB})
+#----------Fetch raylib----------#
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
+
+FetchContent_Declare(
+   raylib
+   GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+   GIT_TAG "master"
+   GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(raylib)
+endif()
 
 list(APPEND libs raylib ${ODE_LIB} opengl32 gdi32 winmm)
 
