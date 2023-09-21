@@ -3,25 +3,23 @@ CC=gcc
 CXX=g++
 COMPILER=$(CXX)
 
-LDFLAGS = -Llib
-LDLIBS := -l:raylib.dll -l:ode_double.dll -lwinmm
+LDFLAGS = -L./
+LDLIBS := -l:raylib.dll -l:ode_double.dll -lopengl32 -lgdi32 -lwinmm
 
-CFLAGS:= -Iode/include/ode -Iode/include -Iinclude/raylib -Iinclude -I./
-CFLAGS+= -std=c++20 -DPLATFORM_DESKTOP
+INCLUDEPATHS:= -Iode/include/ode -Iode/include -Iinclude/raylib -Iinclude -I./
+CFLAGS:= -std=c++20 -DPLATFORM_DESKTOP
 
 SRC:=$(wildcard src/*.cpp)
 OBJ:=$(SRC:src/%.cpp=build/%.obj)
-INC:=$(wildcard include/*.h)
-INC+=$(wildcard ode/include/ode/*.h)
 
 # set to release or debug
 all: release
 
 $(APPNAME): $(OBJ)
-	$(COMPILER) $(OBJ) -o $(APPNAME) $(LDFLAGS) $(LDLIBS)
+	$(COMPILER) $(OBJ) -o build/$(APPNAME) $(LDFLAGS) $(LDLIBS)
 
 $(OBJ): build/%.obj : src/%.cpp
-	$(COMPILER) $(CFLAGS) -c $< -o $@
+	$(COMPILER) $(INCLUDEPATHS) $(CFLAGS) -c $< -o $@
 
 .PHONY: debug release inst
 
@@ -39,7 +37,7 @@ debug release inst: clean $(APPNAME)
 .PHONY:	clean
 clean:
 	rm build/* -rf
-	rm $(APPNAME) -f
+	rm build/$(APPNAME) -f
 
 style: $(SRC) $(INC)
 	astyle -A10 -s4 -S -p -xg -j -z2 -n src/* include/*

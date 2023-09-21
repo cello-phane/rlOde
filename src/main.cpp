@@ -353,7 +353,7 @@ int main(int argc, char* argv[]) {
     double roll = atan2f(z0, z1);
     // assert(M_PI_2 == M_PI/2);//M_PI_2 is half of M_PI
     // If the car is flipped, it's in a halfway rotated state?
-    if (fabs(roll) > (M_PI_2 - 0.001)) {
+    if (fabs(roll) > (M_PI_2 - 0.0007)) {
       carFlipped++;
     } else {
       carFlipped = 0;
@@ -542,7 +542,7 @@ int main(int argc, char* argv[]) {
     if (pSteps > maxPsteps)
       DrawText("WARNING CPU overloaded lagging real time", 200, 20, 20, RED);
     DrawText(TextFormat("%2i FPS", GetFPS()), 10, 20, 20, GREEN);
-    DrawText(TextFormat("accel %2.2f", accel), 10, 80, 20, WHITE);
+    DrawText(TextFormat("accel %2.2f", accel), 10, 75, 20, WHITE);
     DrawText(TextFormat("steer %4.4f", steer), 10, 115, 15, WHITE);
     if (!antiSway)
       DrawText("Anti sway bars OFF", 10, 75, 15, RED);
@@ -563,8 +563,8 @@ int main(int argc, char* argv[]) {
       static_cast<float>(cv[1]),
       static_cast<float>(cv[2])};
     float vel = Vector3Length(cvs) * 2.23693629f;
-    DrawText(TextFormat("mph %.2f", vel), 10, 60, 20, ORANGE);
-    DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n", cp[0], cp[1], cp[2]), 5, 140, 20, WHITE);
+    DrawText(TextFormat("mph %.2f", vel), 10, 40, 35, ORANGE);
+    DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n", cp[0], cp[1], cp[2]), 7, 142, 15, WHITE);
     // printf("%i %i\n",pSteps, numObj);
 
     // if (IsGamepadAvailable(gamepad))
