@@ -32,11 +32,11 @@ release:
 
 release: CFLAGS+= -Ofast
 
-debug release inst: clean $(APPNAME)
+debug release: clean $(APPNAME)
 
 .PHONY:	clean
 clean:
-	rm build/* -rf
+	rm build/CMakeCache.txt
 	rm build/$(APPNAME) -f
 
 style: $(SRC) $(INC)
