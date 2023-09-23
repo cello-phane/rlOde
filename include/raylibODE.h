@@ -22,7 +22,7 @@
  */
 
 #include "raylib.h"
-#include "raymath.h"
+/* #include "raymath.h" */
 
 #include <ode/ode.h>
 
@@ -43,6 +43,7 @@ typedef struct geomInfo {
     bool collidable;
 } geomInfo ;
 
+void drawXboxOverlay(int gamepad, Texture2D &texXboxPad);
 void rayToOdeMat(Matrix* mat, dReal* R);
 void odeToRayMat(const dReal* R, Matrix* matrix);
 void drawAllSpaceGeoms(dSpaceID space);

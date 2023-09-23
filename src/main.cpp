@@ -21,14 +21,10 @@
  *
  */
 #include <array>
-#include <assert.h>
-/* #include <signal.h> */
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-// #include <utility>
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef _WIN32
 #ifdef _MSC_VER
@@ -36,7 +32,6 @@
 #endif // MSVC
 #define APP_NAME_STR_LEN 80
 #endif // _WIN32
-
 
 bool in_callback = false;
 #define ERR_EXIT(err_msg, err_class)                \
@@ -141,9 +136,13 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
 }
 
 int main(int argc, char* argv[]) {
+  bool IsDrawingXboxOverlay = false;
+
   if (IsGamepadAvailable(0)) {
-  #define XBOX360_NAME_ID     "Xbox 360 Controller"
+
+#define XBOX360_NAME_ID     "Xbox 360 Controller"
   }
+  int gamepad = 0; // which gamepad to display
 
   assert(sizeof(dReal) == sizeof(double));
   srand(time(NULL));
@@ -194,6 +193,7 @@ int main(int argc, char* argv[]) {
 
   Model ground = LoadModel("data/ground_2x.obj");
 
+  Texture2D texXboxPad = LoadTexture("data/xbox.png");
   // texture the models
   Texture planetTx = LoadTexture("data/planet.png");
   Texture crateTx = LoadTexture("data/crate.png");
@@ -336,10 +336,6 @@ int main(int argc, char* argv[]) {
   // Main game loop
   //
   //-------------------------------------------------------------------------------------
-  if (IsGamepadAvailable(0)) {
-    Texture2D texXboxPad = LoadTexture("data/xbox.png");
-  }
-  
   while (!WindowShouldClose()) {// Detect window close button or ESC key
     //---------------------------------------------------------------------------------
     // Update
@@ -386,11 +382,11 @@ int main(int argc, char* argv[]) {
     if (steer < -.5)
       steer = -.5;
 
-    if (IsGamepadAvailable(0)) {
-      float lstick_lr = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
-      float lstick_ud = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
-      float rstick_lr = GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
-      float rstick_ud = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+    if (IsGamepadAvailable(gamepad)) {
+      float lstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_X);
+      float lstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
+      float rstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_X);
+      float rstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
       if (lstick_ud < 0)
         accel += 10;
       if (lstick_ud > 0)
@@ -434,7 +430,7 @@ int main(int argc, char* argv[]) {
     // Levitate the objects
     for (int i = 0; i < numObj; i++) {
       const dReal *pos = dBodyGetPosition(obj[i]);
-      if (IsKeyDown(KEY_SPACE) || (IsGamepadAvailable(0) && IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
+      if (IsKeyDown(KEY_SPACE) || (IsGamepadAvailable(gamepad) && IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
         // apply force if the key Spacebar is held down
         const dReal *v = dBodyGetLinearVel(obj[i]);
         if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity and don't let it get too high
@@ -459,7 +455,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Levitate the car if Key Left Shift is held down
-    if (IsKeyDown(KEY_LEFT_SHIFT) || (IsGamepadAvailable(0) && IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
+    if (IsKeyDown(KEY_LEFT_SHIFT) || (IsGamepadAvailable(gamepad) && IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
       for (int i = 0; i < 6; i++) {
         dMass cm;
         dBodyGetMass(car->bodies[i], &cm);
@@ -470,17 +466,30 @@ int main(int argc, char* argv[]) {
         dBodyAddForce(car->bodies[i], 0, f * 10, 0);
       }
     }
-      
-    if (IsKeyPressed(KEY_L) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
+
+    //Fallen off the grid/ground
+    while (cp[1] < -10.0 || cp[1] > 20.0) {
+      // teleport back if fallen off the ground
+      dVector3 init_position = {8.0, 13.0, 60.0};
+      teleportVehicle(car, init_position);
+    }
+
+    // Lights and Xbox overlay buttons
+    if (IsKeyPressed(KEY_L) || (IsGamepadAvailable(gamepad) && IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))) {
       lights[0].enabled = !lights[0].enabled;
       UpdateLightValues(shader, lights[0]);
     }
 
-    //Fallen off the grid/ground
-    while (cp[1] < -10.0 || cp[1] > 15.0) {
-      // teleport back if fallen off the ground
-      dVector3 init_position = {8.0, 13.0, 60.0};
-      teleportVehicle(car, init_position);
+    if (IsGamepadAvailable(gamepad)) {
+      if (IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
+        if (!IsDrawingXboxOverlay) {
+          _sleep(1);
+          IsDrawingXboxOverlay = true;
+        } else {
+          _sleep(1);
+          IsDrawingXboxOverlay = false;
+        }
+      }
     }
 
     // update the light shader with the camera view position
@@ -516,11 +525,8 @@ int main(int argc, char* argv[]) {
     //---------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
-    if (IsGamepadAvailable(0)) {
-      int gamepad = 0; // which gamepad to display
-    }
     BeginDrawing();
-
+    
     ClearBackground(BLACK);
 
     BeginMode3D(camera);
@@ -567,70 +573,10 @@ int main(int argc, char* argv[]) {
     DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n", cp[0], cp[1], cp[2]), 7, 142, 15, WHITE);
     // printf("%i %i\n",pSteps, numObj);
 
-    // if (IsGamepadAvailable(gamepad))
-    //   {
-
-    // if (IsKeyPressed(KEY_LEFT) && gamepad > 0) gamepad--;
-    // if (IsKeyPressed(KEY_RIGHT)) gamepad++;
-
-    //     DrawText(TextFormat("GP%d: %s", gamepad, GetGamepadName(gamepad)), 10, 10, 10, BLACK);
-
-    //     if (true)
-    //       {
-    //         DrawTexture(texXboxPad, 0, 0, DARKGRAY);
-
-    //         // Draw buttons: xbox home
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_MIDDLE)) DrawCircle(394, 89, 19, RED);
-
-    //         // Draw buttons: basic
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_MIDDLE_RIGHT)) DrawCircle(436, 150, 9, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) DrawCircle(352, 150, 9, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) DrawCircle(501, 151, 15, BLUE);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) DrawCircle(536, 187, 15, LIME);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT)) DrawCircle(572, 151, 15, MAROON);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_UP)) DrawCircle(536, 115, 15, GOLD);
-
-    //         // Draw buttons: d-pad
-    //         DrawRectangle(317, 202, 19, 71, BLACK);
-    //         DrawRectangle(293, 228, 69, 19, BLACK);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_FACE_UP)) DrawRectangle(317, 202, 19, 26, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) DrawRectangle(317, 202 + 45, 19, 26, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_FACE_LEFT)) DrawRectangle(292, 228, 25, 19, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) DrawRectangle(292 + 44, 228, 26, 19, RED);
-
-    //         // Draw buttons: left-right back
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) DrawCircle(259, 61, 20, RED);
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) DrawCircle(536, 61, 20, RED);
-
-    //         // Draw axis: left joystick
-
-    //         Color leftGamepadColor = BLACK;
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_THUMB)) leftGamepadColor = RED;
-    //         DrawCircle(259, 152, 39, BLACK);
-    //         DrawCircle(259, 152, 34, LIGHTGRAY);
-    //         DrawCircle(259 + (int)(GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_X)*20),
-    //                    152 + (int)(GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y)*20), 25, leftGamepadColor);
-
-    //         // Draw axis: right joystick
-    //         Color rightGamepadColor = BLACK;
-    //         if (IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_THUMB)) rightGamepadColor = RED;
-    //         DrawCircle(461, 237, 38, BLACK);
-    //         DrawCircle(461, 237, 33, LIGHTGRAY);
-    //         DrawCircle(461 + (int)(GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_X)*20),
-    //                    237 + (int)(GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_Y)*20), 25, rightGamepadColor);
-
-    //         // Draw axis: left-right triggers
-    //         DrawRectangle(170, 30, 15, 70, GRAY);
-    //         DrawRectangle(604, 30, 15, 70, GRAY);
-    //         DrawRectangle(170, 30, 15, (int)(((1 + GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_TRIGGER))/2)*70), RED);
-    //         DrawRectangle(604, 30, 15, (int)(((1 + GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_TRIGGER))/2)*70), RED);
-
-    //         //DrawText(TextFormat("Xbox axis LT: %02.02f", GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_TRIGGER)), 10, 40, 10, BLACK);
-    //         //DrawText(TextFormat("Xbox axis RT: %02.02f", GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_TRIGGER)), 10, 60, 10, BLACK);
-    //       }
+    if (IsDrawingXboxOverlay)
+      drawXboxOverlay(gamepad, texXboxPad);
 
     EndDrawing();
-
   }//End While WindowShouldClose
 
   //----------------------------------------------------------------------------------
