@@ -28,39 +28,39 @@ MESSAGE( STATUS "CXX Compiler ----> ${CMAKE_CXX_COMPILER_ID}")
 set(libs)
 set(RL_INCLUDE_DIR include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
-#TODO move it later to same include path as raylib
-# Also find a way to fetch or find_package for ODE
-set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
 
-#Decide whether to fetch libs for Raylib
-option(FETCH_RL OFF)
-if(FETCH_RL)
-    ##----------Fetch raylib----------#
-    include(FetchContent)
-    set(FETCHCONTENT_QUIET FALSE)
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
-    set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
-
-    FetchContent_Declare(
-        raylib
-        GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-        GIT_TAG "master"
-        GIT_PROGRESS TRUE
-    )
-    FetchContent_MakeAvailable(raylib)
-    set(RAYLIB_LIB raylib)
-else()
-  # Manually set Raylib libs
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
-  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
-  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+# set ON to download and compile Raylib lib
+set(FETCH_RL OFF)
+if(NOT FETCH_RL)
+  #-----Manually set Raylib-----#
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+  else()
+    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
   endif()
+else()
+  #---------Fetch Raylib--------#
+  include(FetchContent)
+  set(FETCHCONTENT_QUIET FALSE)
+  set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    raylib
+    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+  )
+  FetchContent_MakeAvailable(raylib)
+  set(RAYLIB_LIB raylib)
 endif()
-unset(FETCH_RL CACHE)
 
+#----------Manually set ODE---------#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
+else()
+  set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode_double.a)
+endif()
+  
 # Libraries
 list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB} opengl32)
 if(WINDOWS)
@@ -87,7 +87,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   )
 target_link_libraries(${PROJECT_NAME} PRIVATE ${libs})
 
-# Optional: Compiler-specific silenced warnings
+# Optional: Compiler-specific silence warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   target_compile_options(${PROJECT_NAME} PRIVATE
     /wd4244 /wd4245 /wd4305 /wd4310
