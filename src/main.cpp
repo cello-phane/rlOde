@@ -137,9 +137,7 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
 
 int main(int argc, char* argv[]) {
   bool IsDrawingXboxOverlay = false;
-
   if (IsGamepadAvailable(0)) {
-
 #define XBOX360_NAME_ID     "Xbox 360 Controller"
   }
   int gamepad = 0; // which gamepad to display
@@ -148,7 +146,7 @@ int main(int argc, char* argv[]) {
   srand(time(NULL));
   
   // Initialization
-  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
   // Default values
   int numObj = 100;        // Default number of bodies
   int screenWidth = 1920;  // Default screen width
@@ -181,7 +179,7 @@ int main(int argc, char* argv[]) {
   // Camera up vector (rotation towards target)
   camera.up = { 0.0f, 1.0f, 0.0f };
   // Camera field-of-view Y
-  camera.fovy = 45.0f;
+  camera.fovy = 65.0f;
   camera.projection = CAMERA_PERSPECTIVE;
   
   box = LoadModelFromMesh(GenMeshCube(1, 1, 1));
@@ -321,7 +319,7 @@ int main(int argc, char* argv[]) {
 
   float accel = 0;
   float steer = 0;
-  /* Vector3 debug = {0}; */
+  Vector3 debug = {0};
   bool antiSway = true;
 
   // keep the physics fixed time in step with the render frame
@@ -331,15 +329,16 @@ int main(int argc, char* argv[]) {
   const double physSlice = 1.0 / 240.0;
   const int maxPsteps = 6;
   int carFlipped = 0; // number of frames car roll is >90
-  //-------------------------------------------------------------------------------------
+  
+  //-------------------------------------------------------------------------
   //
   // Main game loop
   //
-  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
   while (!WindowShouldClose()) {// Detect window close button or ESC key
-    //---------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------
     // Update
-    //---------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------
 
     // extract just the roll of the car
     // count how many frames its >90 degrees either way
@@ -410,10 +409,7 @@ int main(int argc, char* argv[]) {
     updateVehicle(car, accel, 800.0, steer, 10.0);
 
     const dReal *cp = dBodyGetPosition(car->bodies[0]);
-    float cp_x = static_cast<float>(cp[0]);
-    float cp_y = static_cast<float>(cp[1]);
-    float cp_z = static_cast<float>(cp[2]);
-    Vector3 cam_target = {cp_x, cp_y, cp_z};
+    Vector3 cam_target = {static_cast<float>(cp[0]), static_cast<float>(cp[1]), static_cast<float>(cp[2])};
     camera.target = cam_target;
 
     float lerp = 0.1f;
@@ -430,17 +426,18 @@ int main(int argc, char* argv[]) {
     // Levitate the objects
     for (int i = 0; i < numObj; i++) {
       const dReal *pos = dBodyGetPosition(obj[i]);
-      if (IsKeyDown(KEY_SPACE) || (IsGamepadAvailable(gamepad) && IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
+      if (IsKeyDown(KEY_SPACE) ||
+          (IsGamepadAvailable(gamepad) &&
+           IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
         // apply force if the key Spacebar is held down
         const dReal *v = dBodyGetLinearVel(obj[i]);
-        if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity and don't let it get too high
+        if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity
           if (!dBodyIsEnabled(obj[i])) {
             dBodyEnable(obj[i]); // case its gone to sleep
           }
           dMass mass;
           dBodyGetMass(obj[i], &mass);
           // give some object more force than others
-          // ??? cast to float both i and numbObj at this divsion
           float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
           dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
         }
@@ -455,7 +452,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Levitate the car if Key Left Shift is held down
-    if (IsKeyDown(KEY_LEFT_SHIFT) || (IsGamepadAvailable(gamepad) && IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
+    if (IsKeyDown(KEY_LEFT_SHIFT) ||
+        (IsGamepadAvailable(gamepad) &&
+        IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
       for (int i = 0; i < 6; i++) {
         dMass cm;
         dBodyGetMass(car->bodies[i], &cm);
@@ -475,23 +474,25 @@ int main(int argc, char* argv[]) {
     }
 
     // Lights and Xbox overlay buttons
-    if (IsKeyPressed(KEY_L) || (IsGamepadAvailable(gamepad) && IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))) {
+    if (IsKeyPressed(KEY_L) ||
+        (IsGamepadAvailable(gamepad) &&
+         IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))) {
       lights[0].enabled = !lights[0].enabled;
       UpdateLightValues(shader, lights[0]);
     }
 
-    if (IsGamepadAvailable(gamepad)) {
+    if (IsGamepadAvailable(gamepad)) { //If gamepad is on and connected
       if (IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
-        if (!IsDrawingXboxOverlay) {
-          _sleep(1);
-          IsDrawingXboxOverlay = true;
-        } else {
-          _sleep(1);
-          IsDrawingXboxOverlay = false;
-        }
+        // "select" is pressed -wait one sec-
+        _sleep(1);
+        // alternate [on : off] to draw overlay
+        IsDrawingXboxOverlay = !IsDrawingXboxOverlay ? true : false;
       }
     }
-
+    else { //gamepad is off, then stop drawing the overlay
+      IsDrawingXboxOverlay = false;
+    }
+    
     // update the light shader with the camera view position
     SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
                    &camera.position.x, SHADER_UNIFORM_VEC3);
@@ -520,11 +521,11 @@ int main(int argc, char* argv[]) {
 
     physTime = GetTime() - physTime;
 
-    //---------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------
     // Draw
-    //---------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------
     BeginDrawing();
     
     ClearBackground(BLACK);
@@ -547,30 +548,30 @@ int main(int argc, char* argv[]) {
 
     if (pSteps > maxPsteps)
       DrawText("WARNING CPU overloaded lagging real time", 200, 20, 20, RED);
-    DrawText(TextFormat("%2i FPS", GetFPS()), 10, 20, 20, GREEN);
-    DrawText(TextFormat("accel %2.2f", accel), 10, 75, 20, WHITE);
-    DrawText(TextFormat("steer %4.4f", steer), 10, 115, 15, WHITE);
+    DrawText(TextFormat("%2i FPS", GetFPS()), 10, 12, 20, GREEN);
+    DrawText(TextFormat("accel %2.2f", accel), 10, 70, 20, WHITE);
+    DrawText(TextFormat("steer %4.4f", steer), 10, 105, 15, WHITE);
     if (!antiSway)
       DrawText("Anti sway bars OFF", 10, 75, 15, RED);
-    /* DrawText(TextFormat("debug %4.4f %4.4f %4.4f",debug.x,debug.y,debug.z),
-     * 10, 100, 20, WHITE); */
-    // DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 120, 20, WHITE);
-    // DrawText(TextFormat("Phys time per frame %i", physTime), 10, 140, 20,
-    // WHITE);
-    // DrawText(TextFormat("total time per frame %i", frameTime), 10, 160, 20,
-    // WHITE);
-    DrawText(TextFormat("objects %i", numObj), 10, 35, 10, WHITE);
-
-    DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 130, 15, WHITE);
-
+    DrawText(TextFormat("objects %i", numObj), 10, 27, 10, WHITE);
+    DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120, 15, WHITE);
     const double *cv = dBodyGetLinearVel(car->bodies[0]);
     Vector3 cvs = {
       static_cast<float>(cv[0]),
       static_cast<float>(cv[1]),
       static_cast<float>(cv[2])};
     float vel = Vector3Length(cvs) * 2.23693629f;
-    DrawText(TextFormat("mph %.2f", vel), 10, 40, 35, ORANGE);
-    DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n", cp[0], cp[1], cp[2]), 7, 142, 15, WHITE);
+    DrawText(TextFormat("mph %.2f", vel), 10, 35, 35, ORANGE);
+    DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
+                        cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
+    //Draw debug info
+    // DrawText(TextFormat("debug: %4.4f %4.4f %4.4f",
+                        // debug.x,debug.y,debug.z), 7, 178, 20, WHITE);
+    DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 195, 20, WHITE);
+    DrawText(TextFormat("Phys time per frame %i", physTime), 10, 210, 20,
+    WHITE);
+    DrawText(TextFormat("total time per frame %i", frameTime), 10, 225, 20,
+    WHITE);
     // printf("%i %i\n",pSteps, numObj);
 
     if (IsDrawingXboxOverlay)
@@ -579,11 +580,11 @@ int main(int argc, char* argv[]) {
     EndDrawing();
   }//End While WindowShouldClose
 
-  //----------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
 
-  //-------------------------------------------------------------------------------------
-  // De-Initialization
-  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
+  //-De-Initialization
+  //-------------------------------------------------------------------------
   UnloadModel(box);
   UnloadModel(ball);
   UnloadModel(cylinder);
@@ -605,7 +606,7 @@ int main(int argc, char* argv[]) {
   dWorldDestroy(world);
   dCloseODE();
   CloseWindow(); // Close window and OpenGL context
-  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------
     
   return 0;
 }
