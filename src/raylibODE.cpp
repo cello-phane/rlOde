@@ -366,17 +366,14 @@ void unflipVehicle (vehicle *car)
 void teleportVehicle(vehicle *car, dReal *position) {
   for (int i = 0; i < 6; i++) {
     // Stop all motion
+    dBodySetKinematic(car->bodies[i]);//make the vehicle unforcable(is that a word?)
     dBodySetLinearVel(car->bodies[i], 0, 0, 0);  // Set linear velocity to zero
     dBodySetAngularVel(car->bodies[i], 0, 0, 0); // Set angular velocity to zero
     // Set forces and torques to zero
     dBodySetForce(car->bodies[i], 0, 0, 0);
     dBodySetTorque(car->bodies[i], 0, 0, 0);
+    dBodySetDynamic(car->bodies[i]);
     // Set position
     dBodySetPosition(car->bodies[i], position[0], position[1], position[2]);
-    dBodySetKinematic(car->bodies[i]);
-  }
-  _sleep(2);
-  for (int i = 0; i < 6; i++) {
-    dBodySetDynamic(car->bodies[i]);
   }
 }

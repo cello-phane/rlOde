@@ -137,7 +137,10 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
   }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
+  int IsDrawingInfo = 1; // toggle with this boolean integer
+  int DrawInfoState = 0; //0, 1, 2 represent [none, all, mph+fps]
+  
   bool IsDrawingXboxOverlay = false;
   if (IsGamepadAvailable(0)) {
 #define XBOX360_NAME_ID     "Xbox 360 Controller"
@@ -242,7 +245,7 @@ int main(int argc, char* argv[]) {
 
   world = dWorldCreate();
   // printf("phys iterations per step %i\n",
-         // dWorldGetQuickStepNumIterations(world));
+  // dWorldGetQuickStepNumIterations(world));
   space = dHashSpaceCreate(NULL);
   contactgroup = dJointGroupCreate(0);
   dWorldSetGravity(world, 0, -9.8, 0); // gravity
@@ -355,14 +358,14 @@ int main(int argc, char* argv[]) {
     double roll = atan2f(z0, z1);
     // assert(M_PI_2 == M_PI/2);//M_PI_2 is half of M_PI
     // If the car is flipped, it's in a halfway rotated state?
-    if (fabs(roll) > (M_PI_2 - 0.0007)) {
+    if (fabs(roll) > (M_PI_2 - 0.0004)) {
       carFlipped++;
     } else {
       carFlipped = 0;
     }
 
-    // if the car roll >90 degrees for 100 frames then flip it
-    if (carFlipped > 100) {
+    // if the car roll >90 degrees for 150 frames then flip it
+    if (carFlipped > 150) {
       unflipVehicle(car);
     }
 
@@ -476,14 +479,18 @@ int main(int argc, char* argv[]) {
       }
     }
     
-    //Fallen off the grid/ground
+    //Fallen off the ledge or flown too high
     if (cp[1] < -10.0 || cp[1] > 30.0) {
-      // teleport back if fallen off the ground
-      dVector3 init_position = {8.0, 3.0, 60.0};
-      _sleep(2);
+      double init_position_z = abs(cp[2]) > 250.0f ? 60.0f : cp[2];
+      double init_position_x = abs(cp[0]) > 250.0f ? 8.0f : cp[0];
+      dVector3 init_position = {init_position_x, 3.6, init_position_z};
+      _sleep(1);
       teleportVehicle(car, init_position);
+      if (carFlipped > 100 && cp[1] < 20.0f) {
+        unflipVehicle(car);
+      }
     }
-
+    
     // Lights and Xbox overlay buttons
     if (IsKeyPressed(KEY_L) ||
         (IsGamepadAvailable(gamepad) &&
@@ -494,16 +501,22 @@ int main(int argc, char* argv[]) {
 
     if (IsGamepadAvailable(gamepad)) { //If gamepad is on and connected
       if (IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
-        // "select" is pressed -wait one sec-
+        // "select" is pressed -wait one sec- to delay the over-reactive xbox ctrls
         _sleep(1);
         // alternate [on : off] to draw overlay
         IsDrawingXboxOverlay = !IsDrawingXboxOverlay;
       }
     }
-    else { //gamepad is off, then stop drawing the overlay
+    else { //gamepad is off, stop drawing the overlay
       IsDrawingXboxOverlay = false;
     }
-    
+
+    if (IsKeyPressed(KEY_O) ||//If O is pressed
+        (gs == PAUSED && IsGamepadAvailable(gamepad) &&//or if xbox Y pressed while paused
+         IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_UP))){
+      // Toggle between the states to draw info
+      DrawInfoState = IsDrawingInfo ? (DrawInfoState + 1) % 3 : DrawInfoState;
+    }
     // update the light shader with the camera view position
     SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
                    &camera.position.x, SHADER_UNIFORM_VEC3);
@@ -536,7 +549,6 @@ int main(int argc, char* argv[]) {
     if (IsKeyPressed(KEY_F10) || IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
       if (gs == UNPAUSED) {
         gs = PAUSED;
-        _sleep(1);
         for (int i = 0; i < 6; i++) {
           dBodyDisable(car->bodies[i]);
         }
@@ -553,7 +565,6 @@ int main(int argc, char* argv[]) {
       }
       else {
         gs = UNPAUSED;
-        _sleep(1);
         accel = paused_accel;
         steer = paused_steer;
         roll  = paused_roll;
@@ -591,42 +602,41 @@ int main(int argc, char* argv[]) {
 
     EndMode3D();
 
-    //DrawFPS(10, 20); // can't see it in lime green half the time!!
-
-    if (pSteps > maxPsteps)
-      DrawText("WARNING CPU overloaded lagging real time", 200, 20, 20, RED);
-    DrawText(TextFormat("%2i FPS", GetFPS()), 10, 12, 20, GREEN);
-    DrawText(TextFormat("accel %2.2f", accel), 10, 70, 20, WHITE);
-    DrawText(TextFormat("steer %4.4f", steer), 10, 105, 15, WHITE);
-    if (!antiSway)
-      DrawText("Anti sway bars OFF", 10, 75, 15, RED);
-    DrawText(TextFormat("objects %i", numObj), 10, 27, 10, WHITE);
-    DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120, 15, WHITE);
     const double *cv = dBodyGetLinearVel(car->bodies[0]);
-    Vector3 cvs = {
-      static_cast<float>(cv[0]),
-      static_cast<float>(cv[1]),
-      static_cast<float>(cv[2])};
+    Vector3 cvs = {static_cast<float>(cv[0]),static_cast<float>(cv[1]),static_cast<float>(cv[2])};
     float vel = Vector3Length(cvs) * 2.23693629f;
-    DrawText(TextFormat("mph %.2f", vel), 10, 35, 35, ORANGE);
-    DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
-                        cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-    //Draw debug info
-    // DrawText(TextFormat("debug: %4.4f %4.4f %4.4f",
-                        // debug.x,debug.y,debug.z), 7, 178, 20, WHITE);
-    DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 195, 20, WHITE);
-    DrawText(TextFormat("Phys time per frame %i", physTime), 10, 210, 20,
-    WHITE);
-    DrawText(TextFormat("total time per frame %i", frameTime), 10, 225, 20,
-    WHITE);
-    // printf("%i %i\n",pSteps, numObj);
-
+    if (DrawInfoState > 0) {
+      DrawText(TextFormat("%2i FPS", GetFPS()), 10, 12, 20, GREEN);
+      DrawText(TextFormat("mph %.2f", vel), 10, 35, 35, ORANGE);
+      if (DrawInfoState > 1){
+        if (pSteps > maxPsteps)
+          DrawText("WARNING CPU overloaded lagging real time", 200, 20, 20, RED);
+        DrawText(TextFormat("accel %2.2f", accel), 10, 70, 20, WHITE);
+        DrawText(TextFormat("steer %4.4f", steer), 10, 105, 15, WHITE);
+        if (!antiSway)
+          DrawText("Anti sway bars OFF", 10, 75, 15, RED);
+        DrawText(TextFormat("objects %i", numObj), 10, 27, 10, WHITE);
+        DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120, 15, WHITE);
+      
+        DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
+                            cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
+        //Draw debug info
+        // DrawText(TextFormat("debug: %4.4f %4.4f %4.4f",
+        // debug.x,debug.y,debug.z), 7, 178, 20, WHITE);
+        DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 195, 20, WHITE);
+        DrawText(TextFormat("Phys time per frame %i", physTime), 10, 210, 20,
+                 WHITE);
+        DrawText(TextFormat("total time per frame %i", frameTime), 10, 225, 20,
+                 WHITE);
+      }
+    }
     if (IsDrawingXboxOverlay)
       drawXboxOverlay(gamepad, texXboxPad);
     if (gs == PAUSED)
       DrawText( TextFormat("PAUSED"), (screenWidth / 2) - 120, (screenHeight / 2) - 40, 60, RED);
-    EndDrawing();
+    EndDrawing(); 
   }//End While WindowShouldClose
+  // printf("%i %i\n",pSteps, numObj);
 
   //-------------------------------------------------------------------------
 
@@ -644,7 +654,6 @@ int main(int argc, char* argv[]) {
   UnloadShader(shader);
 
   RL_FREE(car);
-
   RL_FREE(groundInd);
   dGeomTriMeshDataDestroy(triData);
 
