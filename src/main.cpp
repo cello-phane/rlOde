@@ -20,6 +20,7 @@
  * SOFTWARE.
  *
  */
+#include "ode/objects.h"
 #include <array>
 #include <cassert>
 #include <cstdarg>
@@ -165,7 +166,7 @@ int main(int argc, char* argv[]) {
   dSpaceID space;
 
   // create an array of bodies
-  dBodyID obj[100];
+  dBodyID obj[numObj];
 
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
@@ -239,8 +240,8 @@ int main(int argc, char* argv[]) {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
   world = dWorldCreate();
-  printf("phys iterations per step %i\n",
-         dWorldGetQuickStepNumIterations(world));
+  // printf("phys iterations per step %i\n",
+         // dWorldGetQuickStepNumIterations(world));
   space = dHashSpaceCreate(NULL);
   contactgroup = dJointGroupCreate(0);
   dWorldSetGravity(world, 0, -9.8, 0); // gravity
@@ -316,7 +317,9 @@ int main(int argc, char* argv[]) {
     dGeomSetBody(geom, obj[i]);
     dBodySetMass(obj[i], &m);
   }
-
+  float paused_accel = 0;
+  float paused_steer = 0;
+  
   float accel = 0;
   float steer = 0;
   Vector3 debug = {0};
@@ -335,11 +338,13 @@ int main(int argc, char* argv[]) {
   // Main game loop
   //
   //-------------------------------------------------------------------------
+  GAME_STATE gs = UNPAUSED;
+
   while (!WindowShouldClose()) {// Detect window close button or ESC key
     //-----------------------------------------------------------------------
     // Update
     //-----------------------------------------------------------------------
-
+    
     // extract just the roll of the car
     // count how many frames its >90 degrees either way
     const dReal *q = dBodyGetQuaternion(car->bodies[0]);
@@ -486,7 +491,7 @@ int main(int argc, char* argv[]) {
         // "select" is pressed -wait one sec-
         _sleep(1);
         // alternate [on : off] to draw overlay
-        IsDrawingXboxOverlay = !IsDrawingXboxOverlay ? true : false;
+        IsDrawingXboxOverlay = !IsDrawingXboxOverlay;
       }
     }
     else { //gamepad is off, then stop drawing the overlay
@@ -521,6 +526,38 @@ int main(int argc, char* argv[]) {
 
     physTime = GetTime() - physTime;
 
+    //Game state paused
+    if (IsKeyPressed(KEY_F10) || IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
+      if (gs == UNPAUSED) {
+        gs = PAUSED;
+        paused_accel = accel;
+        paused_steer = steer;
+        accel = 0;
+        steer = 0;
+        roll = 0;
+        for (int i = 0; i < 6; i++) {
+          dBodyDisable(car->bodies[i]);
+        }
+        for (int i = 0; i < numObj; i++) {
+          _sleep(1);
+          if(dBodyIsEnabled(obj[i]))
+            dBodyDisable(obj[i]);
+        }
+      }
+      else {
+        gs = UNPAUSED;
+        for (int i = 0; i < 6; i++) {
+          dBodyEnable(car->bodies[i]);
+        }
+        for (int i = 0; i < numObj; i++) {
+          _sleep(1);
+          if(!dBodyIsEnabled(obj[i]))
+            dBodyEnable(obj[i]);
+        }
+        
+      }
+    }
+    
     //-----------------------------------------------------------------------
     // Draw
     //-----------------------------------------------------------------------
@@ -532,15 +569,16 @@ int main(int argc, char* argv[]) {
 
     BeginMode3D(camera);
     Vector3 ground_vec = {0.0,0.0,0.0,};
-    DrawModel(ground, ground_vec, 1, GREEN);
+    DrawModel(ground, ground_vec, 1.0, Color{GREEN});
 
     // NB normally you wouldn't be drawing the collision meshes
-    // instead you'd iterrate all the bodies get a user data pointer
+    // instead you'd iterate all the bodies get a user data pointer
     // from the body you'd previously set and use that to look up
     // what you are rendering oriented and positioned as per the
     // body
     drawAllSpaceGeoms(space);
-    DrawGrid(400, 1.0f);
+    // Tile grid on the z-plane
+    // DrawGrid(501, 1.f);
 
     EndMode3D();
 
@@ -576,7 +614,8 @@ int main(int argc, char* argv[]) {
 
     if (IsDrawingXboxOverlay)
       drawXboxOverlay(gamepad, texXboxPad);
-
+    if (gs == PAUSED)
+      DrawText( TextFormat("PAUSED"), (screenWidth / 2) - 120, (screenHeight / 2) - 40, 60, RED);
     EndDrawing();
   }//End While WindowShouldClose
 
