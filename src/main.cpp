@@ -20,6 +20,7 @@
  * SOFTWARE.
  *
  */
+// #include "ode/objects.h"
 #include "ode/objects.h"
 #include <array>
 #include <cassert>
@@ -317,8 +318,9 @@ int main(int argc, char* argv[]) {
     dGeomSetBody(geom, obj[i]);
     dBodySetMass(obj[i], &m);
   }
-  float paused_accel = 0;
-  float paused_steer = 0;
+  [[maybe_unused]] float    paused_accel = 0.0f;
+  [[maybe_unused]] float    paused_steer = 0.0f;
+  [[maybe_unused]] double   paused_roll  = 0.0;
   
   float accel = 0;
   float steer = 0;
@@ -365,52 +367,54 @@ int main(int argc, char* argv[]) {
     }
 
     accel *= .99;
-    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
-      accel += 10;
-    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))
-      accel -= 10;
-    if (accel > 50)
-      accel = 50;
-    if (accel < -15)
-      accel = -15;
-
-    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
-      steer -= .1;
-    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
-      steer += .1;
-    if ((!IsKeyDown(KEY_RIGHT) || !IsKeyDown(KEY_D)) &&
-        (!IsKeyDown(KEY_LEFT) || !IsKeyDown(KEY_A)))
-      steer *= .5;
-    if (steer > .5)
-      steer = .5;
-    if (steer < -.5)
-      steer = -.5;
-
-    if (IsGamepadAvailable(gamepad)) {
-      float lstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_X);
-      float lstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
-      float rstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_X);
-      float rstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
-      if (lstick_ud < 0)
+    if (gs == UNPAUSED) {
+      if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))
         accel += 10;
-      if (lstick_ud > 0)
+      if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))
         accel -= 10;
       if (accel > 50)
         accel = 50;
       if (accel < -15)
         accel = -15;
-      if (rstick_lr > 0)
-        steer -= .05;
-      if (rstick_lr < 0)
-        steer += .05;
-      if (rstick_lr == 0)
+
+      if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
+        steer -= .1;
+      if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
+        steer += .1;
+      if ((!IsKeyDown(KEY_RIGHT) || !IsKeyDown(KEY_D)) &&
+          (!IsKeyDown(KEY_LEFT) || !IsKeyDown(KEY_A)))
         steer *= .5;
       if (steer > .5)
         steer = .5;
       if (steer < -.5)
         steer = -.5;
-    }
 
+      if (IsGamepadAvailable(gamepad)) {
+        float lstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_X);
+        float lstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
+        float rstick_lr = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_X);
+        float rstick_ud = GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_Y);
+        if (lstick_ud < 0)
+          accel += 10;
+        if (lstick_ud > 0)
+          accel -= 10;
+        if (accel > 50)
+          accel = 50;
+        if (accel < -15)
+          accel = -15;
+        if (rstick_lr > 0)
+          steer -= .05;
+        if (rstick_lr < 0)
+          steer += .05;
+        if (rstick_lr == 0)
+          steer *= .5;
+        if (steer > .5)
+          steer = .5;
+        if (steer < -.5)
+          steer = -.5;
+      }
+    }
+    
     updateVehicle(car, accel, 800.0, steer, 10.0);
 
     const dReal *cp = dBodyGetPosition(car->bodies[0]);
@@ -427,54 +431,56 @@ int main(int argc, char* argv[]) {
     camera.position.z -= (camera.position.z - co[2]) * lerp; // * (1/ft);
     UpdateCamera(&camera, 0);
       
-      
-    // Levitate the objects
-    for (int i = 0; i < numObj; i++) {
-      const dReal *pos = dBodyGetPosition(obj[i]);
-      if (IsKeyDown(KEY_SPACE) ||
-          (IsGamepadAvailable(gamepad) &&
-           IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
-        // apply force if the key Spacebar is held down
-        const dReal *v = dBodyGetLinearVel(obj[i]);
-        if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity
-          if (!dBodyIsEnabled(obj[i])) {
-            dBodyEnable(obj[i]); // case its gone to sleep
+    if (gs == UNPAUSED) {  
+      // Levitate the objects
+      for (int i = 0; i < numObj; i++) {
+        const dReal *pos = dBodyGetPosition(obj[i]);
+        if (IsKeyDown(KEY_SPACE) ||
+            (IsGamepadAvailable(gamepad) &&
+             IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) ){
+          // apply force if the key Spacebar is held down
+          const dReal *v = dBodyGetLinearVel(obj[i]);
+          if (v[1] < 10 && pos[1] < 10) { // cap upwards velocity
+            if (!dBodyIsEnabled(obj[i])) {
+              dBodyEnable(obj[i]); // case its gone to sleep
+            }
+            dMass mass;
+            dBodyGetMass(obj[i], &mass);
+            // give some object more force than others
+            float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
+            dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
           }
-          dMass mass;
-          dBodyGetMass(obj[i], &mass);
-          // give some object more force than others
-          float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
-          dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
+        }
+        //Fall back down?
+        if (pos[1] < -10) {
+          dBodySetPosition(obj[i], dRandReal() * 10 - 5, 12 + rndf(1, 2),
+                           dRandReal() * 10 - 5);
+          dBodySetLinearVel(obj[i], 5, 5, 5);
+          dBodySetAngularVel(obj[i], 5, 5, 5);
         }
       }
-      //Fall back down?
-      if (pos[1] < -10) {
-        dBodySetPosition(obj[i], dRandReal() * 10 - 5, 12 + rndf(1, 2),
-                         dRandReal() * 10 - 5);
-        dBodySetLinearVel(obj[i], 5, 5, 5);
-        dBodySetAngularVel(obj[i], 5, 5, 5);
-      }
-    }
 
-    // Levitate the car if Key Left Shift is held down
-    if (IsKeyDown(KEY_LEFT_SHIFT) ||
-        (IsGamepadAvailable(gamepad) &&
-        IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
-      for (int i = 0; i < 6; i++) {
-        dMass cm;
-        dBodyGetMass(car->bodies[i], &cm);
-        float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
-        if (i == 3) {
-          f += f*0.5;
+      // Levitate the car if Key Left Shift is held down
+      if (IsKeyDown(KEY_LEFT_SHIFT) ||
+          (IsGamepadAvailable(gamepad) &&
+           IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)) ) {
+        for (int i = 0; i < 6; i++) {
+          dMass cm;
+          dBodyGetMass(car->bodies[i], &cm);
+          float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
+          if (i == 3) {
+            f += f*0.5;
+          }
+          dBodyAddForce(car->bodies[i], 0, f * 10, 0);
         }
-        dBodyAddForce(car->bodies[i], 0, f * 10, 0);
       }
     }
-
+    
     //Fallen off the grid/ground
-    while (cp[1] < -10.0 || cp[1] > 20.0) {
+    if (cp[1] < -10.0 || cp[1] > 30.0) {
       // teleport back if fallen off the ground
-      dVector3 init_position = {8.0, 13.0, 60.0};
+      dVector3 init_position = {8.0, 3.0, 60.0};
+      _sleep(2);
       teleportVehicle(car, init_position);
     }
 
@@ -530,31 +536,34 @@ int main(int argc, char* argv[]) {
     if (IsKeyPressed(KEY_F10) || IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
       if (gs == UNPAUSED) {
         gs = PAUSED;
-        paused_accel = accel;
-        paused_steer = steer;
-        accel = 0;
-        steer = 0;
-        roll = 0;
+        _sleep(1);
         for (int i = 0; i < 6; i++) {
           dBodyDisable(car->bodies[i]);
         }
         for (int i = 0; i < numObj; i++) {
-          _sleep(1);
           if(dBodyIsEnabled(obj[i]))
             dBodyDisable(obj[i]);
         }
+        paused_accel = accel;
+        paused_steer = steer;
+        paused_roll = roll;
+        accel = 0;
+        steer = 0;
+        roll = 0;
       }
       else {
         gs = UNPAUSED;
+        _sleep(1);
+        accel = paused_accel;
+        steer = paused_steer;
+        roll  = paused_roll;
         for (int i = 0; i < 6; i++) {
           dBodyEnable(car->bodies[i]);
         }
         for (int i = 0; i < numObj; i++) {
-          _sleep(1);
           if(!dBodyIsEnabled(obj[i]))
             dBodyEnable(obj[i]);
         }
-        
       }
     }
     

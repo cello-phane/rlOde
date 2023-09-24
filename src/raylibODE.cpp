@@ -21,6 +21,7 @@
  *
  */
 
+#include "ode/objects.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
@@ -363,14 +364,19 @@ void unflipVehicle (vehicle *car)
 }
 
 void teleportVehicle(vehicle *car, dReal *position) {
-  // Set position
-    dBodySetPosition(car->bodies[0], position[0], position[1], position[2]);
-
+  for (int i = 0; i < 6; i++) {
     // Stop all motion
-    dBodySetLinearVel(car->bodies[0], 0, 0, 0);  // Set linear velocity to zero
-    dBodySetAngularVel(car->bodies[0], 0, 0, 0); // Set angular velocity to zero
-
+    dBodySetLinearVel(car->bodies[i], 0, 0, 0);  // Set linear velocity to zero
+    dBodySetAngularVel(car->bodies[i], 0, 0, 0); // Set angular velocity to zero
     // Set forces and torques to zero
-    dBodySetForce(car->bodies[0], 0, 0, 0);
-    dBodySetTorque(car->bodies[0], 0, 0, 0);
+    dBodySetForce(car->bodies[i], 0, 0, 0);
+    dBodySetTorque(car->bodies[i], 0, 0, 0);
+    // Set position
+    dBodySetPosition(car->bodies[i], position[0], position[1], position[2]);
+    dBodySetKinematic(car->bodies[i]);
+  }
+  _sleep(2);
+  for (int i = 0; i < 6; i++) {
+    dBodySetDynamic(car->bodies[i]);
+  }
 }
