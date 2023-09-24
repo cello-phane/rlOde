@@ -75,6 +75,7 @@ void DbgMsg(char *fmt, ...) {
  * and run make, you should then be set to compile this project
  */
 
+typedef unsigned long long ull;
 // globals in use by nearCallback
 dWorldID world;
 dJointGroupID contactgroup;
@@ -168,10 +169,10 @@ int main(int argc, char *argv[]) {
   // a space can have multiple "worlds" for example you might have different
   // sub levels that never interact, or the inside and outside of a building
   dSpaceID space;
-
+  
   // create an array of bodies
-  dBodyID obj[numObj];
-
+  dBodyID* obj = static_cast<dBodyID*>(RL_MALLOC(numObj * sizeof(dBodyID)));
+  
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
 
