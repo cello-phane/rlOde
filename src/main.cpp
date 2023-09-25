@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 
   // create an array of bodies
   // dBodyID obj[numObj];
-  dBodyID* obj = static_cast<dBodyID*>(RL_MALLOC(sizeof(dBodyID) * numObj)); 
+  dBodyID *obj = static_cast<dBodyID*>(RL_MALLOC(sizeof(dBodyID) * numObj)); 
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
 
@@ -617,10 +617,10 @@ int main(int argc, char *argv[]) {
         DrawText(TextFormat("accel %2.2f", accel), 10, 70, 20, WHITE);
         DrawText(TextFormat("steer %4.4f", steer), 10, 105, 15, WHITE);
         if (antiSway) {
-          DrawText("Anti sway bars ON", 10, 87, 15, WHITE);
+          DrawText("Anti sway bars ON", 10, 88, 15, WHITE);
         }
         else if (!antiSway) {
-          DrawText("Anti sway bars OFF", 10, 87, 15, PINK);
+          DrawText("Anti sway bars OFF", 10, 88, 15, PINK);
         }
         DrawText(TextFormat("objects %i", numObj), 10, 27, 10, WHITE);
         DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120, 15, WHITE);
@@ -676,7 +676,7 @@ int main(int argc, char *argv[]) {
   UnloadTexture(crateTx);
   UnloadTexture(grassTx);
   UnloadShader(shader);
-
+  RL_FREE(obj);
   RL_FREE(car);
   RL_FREE(groundInd);
   dGeomTriMeshDataDestroy(triData);
