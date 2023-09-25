@@ -75,7 +75,6 @@ void DbgMsg(char *fmt, ...) {
  * and run make, you should then be set to compile this project
  */
 
-typedef unsigned long long ull;
 // globals in use by nearCallback
 dWorldID world;
 dJointGroupID contactgroup;
@@ -169,10 +168,10 @@ int main(int argc, char *argv[]) {
   // a space can have multiple "worlds" for example you might have different
   // sub levels that never interact, or the inside and outside of a building
   dSpaceID space;
-  
+
   // create an array of bodies
-  dBodyID* obj = static_cast<dBodyID*>(RL_MALLOC(numObj * sizeof(dBodyID)));
-  
+  // dBodyID obj[numObj];
+  dBodyID* obj = static_cast<dBodyID*>(RL_MALLOC(sizeof(dBodyID) * numObj)); 
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
 
@@ -491,32 +490,37 @@ int main(int argc, char *argv[]) {
         unflipVehicle(car);
       }
     }
-    
-    // Lights and Xbox overlay buttons
-    if (IsKeyPressed(KEY_L) ||
-        (IsGamepadAvailable(gamepad) &&
-         IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))) {
-      lights[0].enabled = !lights[0].enabled;
-      UpdateLightValues(shader, lights[0]);
-    }
 
-    if (IsGamepadAvailable(gamepad)) { //If gamepad is on and connected
-      if (IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
+    if (gs == PAUSED) {
+      if (IsGamepadAvailable(gamepad) //If gamepad is on and connected
+          && IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_MIDDLE_LEFT)) {
         // "select" is pressed -wait one sec- to delay the over-reactive xbox ctrls
         _sleep(1);
         // alternate [on : off] to draw overlay
         IsDrawingXboxOverlay = !IsDrawingXboxOverlay;
       }
     }
-    else { //gamepad is off, stop drawing the overlay
+    if (!IsGamepadAvailable(gamepad)) { //gamepad is off, stop drawing the overlay
       IsDrawingXboxOverlay = false;
     }
 
-    if (IsKeyPressed(KEY_O) ||//If O is pressed
-        (gs == PAUSED && IsGamepadAvailable(gamepad) &&//or if xbox Y pressed while paused
-         IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_UP))){
-      // Toggle between the states to draw info
-      DrawInfoState = IsDrawingInfo ? (DrawInfoState + 1) % 3 : DrawInfoState;
+    if (gs == PAUSED) {
+      if (IsKeyPressed(KEY_O) || // If O is pressed
+          (IsGamepadAvailable(gamepad) && // or if xbox Y pressed while paused
+           IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_UP))) {
+        // Toggle between the states to draw info
+        DrawInfoState = IsDrawingInfo ? (DrawInfoState + 1) % 3 : DrawInfoState;
+      }
+    }
+
+    // Lights and Xbox overlay buttons
+    if (gs == PAUSED) {
+      if (IsKeyPressed(KEY_L) ||
+          (IsGamepadAvailable(gamepad) &&
+           IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))) {
+        lights[0].enabled = !lights[0].enabled;
+        UpdateLightValues(shader, lights[0]);
+      }
     }
     // update the light shader with the camera view position
     SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
@@ -633,9 +637,25 @@ int main(int argc, char *argv[]) {
     }
     if (IsDrawingXboxOverlay)
       drawXboxOverlay(gamepad, texXboxPad);
-    if (gs == PAUSED)
-      DrawText( TextFormat("PAUSED"), (screenWidth / 2) - 120, (screenHeight / 2) - 40, 60, RED);
-    EndDrawing(); 
+    if (gs == PAUSED){
+      DrawText(TextFormat("PAUSED"), (screenWidth / 2) - 120,
+               (screenHeight / 2), 60, RED);
+      if(!IsGamepadAvailable(gamepad)) {
+        DrawText(TextFormat("O \t -> top left info"), (screenWidth / 2) - 100,
+                 (screenHeight / 2) + 50, 20, BLUE);
+        DrawText(TextFormat("L \t -> on/off lights"), (screenWidth / 2) - 100,
+               (screenHeight / 2) + 70, 20, BLUE);
+      }
+      else if(IsGamepadAvailable(gamepad)) {
+        DrawText(TextFormat("Y \t -> top left info"), (screenWidth / 2) - 100,
+                 (screenHeight / 2) + 50, 20, BLUE);
+        DrawText(TextFormat("X \t -> on/off lights"), (screenWidth / 2) - 100,
+               (screenHeight / 2) + 70, 20, BLUE);
+        DrawText(TextFormat("[SELECT] \t -> controller overlay"),
+                 (screenWidth / 2) - 183, (screenHeight / 2) + 90, 20, BLUE);
+      }
+    }
+  EndDrawing(); 
   }//End While WindowShouldClose
   // printf("%i %i\n",pSteps, numObj);
 
