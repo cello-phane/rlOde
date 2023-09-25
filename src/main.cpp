@@ -616,8 +616,12 @@ int main(int argc, char *argv[]) {
           DrawText("WARNING CPU overloaded lagging real time", 200, 20, 20, RED);
         DrawText(TextFormat("accel %2.2f", accel), 10, 70, 20, WHITE);
         DrawText(TextFormat("steer %4.4f", steer), 10, 105, 15, WHITE);
-        if (!antiSway)
-          DrawText("Anti sway bars OFF", 10, 75, 15, RED);
+        if (antiSway) {
+          DrawText("Anti sway bars ON", 10, 87, 15, WHITE);
+        }
+        else if (!antiSway) {
+          DrawText("Anti sway bars OFF", 10, 87, 15, PINK);
+        }
         DrawText(TextFormat("objects %i", numObj), 10, 27, 10, WHITE);
         DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120, 15, WHITE);
       
@@ -640,20 +644,21 @@ int main(int argc, char *argv[]) {
                (screenHeight / 2), 60, RED);
       if(!IsGamepadAvailable(gamepad)) {
         DrawText(TextFormat("O \t -> top left info"), (screenWidth / 2) - 100,
-                 (screenHeight / 2) + 50, 20, BLUE);
+                 (screenHeight / 2) + 50, 20, YELLOW);
         DrawText(TextFormat("L \t -> on/off lights"), (screenWidth / 2) - 100,
-               (screenHeight / 2) + 70, 20, BLUE);
+                 (screenHeight / 2) + 70, 20, YELLOW);
       }
       else if(IsGamepadAvailable(gamepad)) {
         DrawText(TextFormat("Y \t -> top left info"), (screenWidth / 2) - 100,
-                 (screenHeight / 2) + 50, 20, BLUE);
+                 (screenHeight / 2) + 50, 20, YELLOW);
         DrawText(TextFormat("X \t -> on/off lights"), (screenWidth / 2) - 100,
-               (screenHeight / 2) + 70, 20, BLUE);
+               (screenHeight / 2) + 70, 20, YELLOW);
         DrawText(TextFormat("[SELECT] \t -> controller overlay"),
-                 (screenWidth / 2) - 183, (screenHeight / 2) + 90, 20, BLUE);
+                 (screenWidth / 2) - 183, (screenHeight / 2) + 90, 20, YELLOW);
       }
     }
-    EndDrawing(); 
+
+  EndDrawing(); 
   }//End While WindowShouldClose
   // printf("%i %i\n",pSteps, numObj);
 
