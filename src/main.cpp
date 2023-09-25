@@ -20,8 +20,6 @@
  * SOFTWARE.
  *
  */
-// #include "ode/objects.h"
-#include "ode/objects.h"
 #include <array>
 #include <cassert>
 #include <cstdarg>
@@ -655,7 +653,11 @@ int main(int argc, char *argv[]) {
                  (screenWidth / 2) - 183, (screenHeight / 2) + 90, 20, BLUE);
       }
     }
+<<<<<<< HEAD
   EndDrawing(); 
+=======
+    EndDrawing(); 
+>>>>>>> 0231c03 (Moved an include to a header file.)
   }//End While WindowShouldClose
   // printf("%i %i\n",pSteps, numObj);
 

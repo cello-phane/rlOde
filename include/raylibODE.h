@@ -25,6 +25,7 @@
 #include "raymath.h"
 
 #include <ode/ode.h>
+#include "ode/objects.h"
 
 // TODO extern for now - need to add function set these and keep them here...
 extern Model ball;
