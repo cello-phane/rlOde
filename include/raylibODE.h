@@ -45,7 +45,7 @@ typedef struct geomInfo {
 } geomInfo ;
 
 typedef enum GAME_STATE {
-  PAUSED,
+  PAUSED = 0,
   UNPAUSED,
 } GAME_STATE;
 
