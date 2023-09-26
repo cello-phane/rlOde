@@ -85,71 +85,11 @@ Model cylinder;
 dBodyID *objInGameInitd = nullptr;
 int totalObjCount = 0;
 int numObjRuntimeInitdCount = 0;
+
 //when objects potentially collide this callback is called
 //you can rule out certain collisions or use different surface parameters
 //depending what object types collide.... lots of flexibility and power here!
 #define MAX_CONTACTS 16
-
-inline float rndf(float min, float max);
-//macro candidate ? marcro's? eek!
-
-float rndf(float min, float max) {
-  return (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * (max - min) + min;
-}
-
-dBodyID* createObjects(int &numObj, dWorldID &world, dBodyID *obj, dSpaceID &space) {
-  obj = static_cast<dBodyID*>(RL_MALLOC(numObj * sizeof(dBodyID)));
-  // create the physics bodies
-  for (int i = 0; i < numObj; i++) {
-    obj[i] = dBodyCreate(world);
-    dGeomID geom;
-    dMatrix3 R;
-    dMass m;
-    float typ = rndf(0, 1);
-    if (typ < .25) { //  box
-      Vector3 s = {rndf(0.5, 2), rndf(0.5, 2), rndf(0.5, 2)};
-      geom = dCreateBox(space, s.x, s.y, s.z);
-      dMassSetBox(&m, 1, s.x, s.y, s.z);
-    } else if (typ < .5) { //  sphere
-      float r = rndf(0.5, 1);
-      geom = dCreateSphere(space, r);
-      dMassSetSphere(&m, 1, r);
-    } else if (typ < .75) { //  cylinder
-      float l = rndf(0.5, 2);
-      float r = rndf(0.25, 1);
-      geom = dCreateCylinder(space, r, l);
-      dMassSetCylinder(&m, 1, 3, r, l);
-    } else { //  composite of cylinder with 2 spheres
-      double l = rndf(.9, 1.5);
-      dGeomID geom3 = dCreateSphere(space, l / 2);
-      geom = dCreateCylinder(space, 0.25, l);
-      dGeomID geom2 = dCreateSphere(space, l / 2);
-      dMass m2, m3;
-      dMassSetSphere(&m2, 1, l / 2);
-      dMassTranslate(&m2, 0, 0, l - 0.25);
-      dMassSetSphere(&m3, 1, l / 2);
-      dMassTranslate(&m3, 0, 0, -l + 0.25);
-      dMassSetCylinder(&m, 1, 3, .25, l);
-      dMassAdd(&m2, &m3);
-      dMassAdd(&m, &m2);
-
-      dGeomSetBody(geom2, obj[i]);
-      dGeomSetBody(geom3, obj[i]);
-      dGeomSetOffsetPosition(geom2, 0, 0, l - 0.25);
-      dGeomSetOffsetPosition(geom3, 0, 0, -l + 0.25);
-    }
-
-    // give the body a random position and rotation
-    dBodySetPosition(obj[i], dRandReal() * 10 - 5, 4 + (i / 10), dRandReal() * 10 - 5);
-    dRFromAxisAndAngle(R, dRandReal() * 2.0 - 1.0, dRandReal() * 2.0 - 1.0,
-                       dRandReal() * 2.0 - 1.0, dRandReal() * M_PI * 2 - M_PI);
-    dBodySetRotation(obj[i], R);
-    // set the bodies mass and the newly created geometry
-    dGeomSetBody(geom, obj[i]);
-    dBodySetMass(obj[i], &m);
-  }
-  return obj;
-}
 
 static void nearCallback([[maybe_unused]] void *data, dGeomID o1, dGeomID o2) {
   data = nullptr;
@@ -340,7 +280,7 @@ int main(int argc, char *argv[]) {
   float steer = 0;
   Vector3 debug = {0};
   bool antiSway = true;
-
+  bool teleporting = false;
   // keep the physics fixed time in step with the render frame
   // rate which we don't know in advance
   double frameTime = 0;
@@ -356,7 +296,7 @@ int main(int argc, char *argv[]) {
   //-------------------------------------------------------------------------
   GAME_STATE gs = UNPAUSED;
   DisableCursor();//Disable mouse cursor
-  while (!WindowShouldClose()) {// Detect window close button or ESC key
+  while (!WindowShouldClose()) { // Detect window close button or ESC key
     //-----------------------------------------------------------------------
     // Update
     //-----------------------------------------------------------------------
@@ -367,6 +307,8 @@ int main(int argc, char *argv[]) {
     double z0 = 2.0f * (q[0] * q[3] + q[1] * q[2]);
     double z1 = 1.0f - 2.0f * (q[1] * q[1] + q[3] * q[3]);
     double roll = atan2f(z0, z1);
+    
+    const dReal *cp = dBodyGetPosition(car->bodies[0]);
     // π/2 = 90 degrees = approximately 1.570796 radians
     // If the car is on its side - and roll is approx 1.0 radians, it is flipped
     if (fabs(roll) > (M_PI_2 - 0.5)) {
@@ -374,9 +316,8 @@ int main(int argc, char *argv[]) {
     } else {
       carFlipped = 0;
     }
-    const dReal *cp = dBodyGetPosition(car->bodies[0]);
     Vector3 cam_target = {static_cast<float>(cp[0]), static_cast<float>(cp[1]),
-                          static_cast<float>(cp[2])};
+                          static_cast<float>(cp[2]) };
 
     updateVehicle(car, accel, 800.0, steer, 10.0);
 
@@ -486,7 +427,7 @@ int main(int argc, char *argv[]) {
           for (int i = 0; i < 6; i++) {
             dMass cm;
             dBodyGetMass(car->bodies[i], &cm);
-            float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
+            float f = (6 + (static_cast<float>(i / 6) * 4)) * cm.mass;
             if (i == 3) {
               f += f*0.5;
             }
@@ -499,9 +440,9 @@ int main(int argc, char *argv[]) {
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f  : cp[0];
         dVector3 init_position = {init_position_x, 3.6, init_position_z};
-        teleportVehicle(car, init_position);
-        if (carFlipped > 100 && cp[1] < 20.0f) {
-          unflipVehicle(car);
+        teleportVehicle(car, init_position, carFlipped);
+        for (int i = 0; i < 6; i++) {
+          dBodyEnable(car->bodies[i]);
         }
       }
       
@@ -517,16 +458,14 @@ int main(int argc, char *argv[]) {
       IsDrawingXboxOverlay = false;
     }
 
-
     // update the light shader with the camera view position
     SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
                    &camera.position.x, SHADER_UNIFORM_VEC3);
 
-    
     frameTime += GetFrameTime();
     int pSteps = 0;
     physTime = GetTime();
-
+    
     while (frameTime > physSlice) {
       // check for collisions
       // TODO use 2nd param data to pass custom structure with
@@ -673,8 +612,12 @@ int main(int argc, char *argv[]) {
                  20, WHITE);
       }
     }
-    if (IsDrawingXboxOverlay)
+    if (IsDrawingXboxOverlay) {
       drawXboxOverlay(gamepad, texXboxPad);
+    // if (teleporting) {
+       // DrawText(TextFormat("Teleporting vehicle..."), (screenWidth / 2) - 160,
+                // (screenHeight / 2), 40, YELLOW);
+    }
     if (gs == PAUSED) {
       DrawText(TextFormat("PAUSED"), (screenWidth / 2) - 120,
                (screenHeight / 2), 60, RED);
