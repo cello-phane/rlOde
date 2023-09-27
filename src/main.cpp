@@ -84,7 +84,7 @@ Model ball;
 Model cylinder;
 dBodyID *objInGameInitd = nullptr;
 int totalObjCount = 0;
-int numObjRuntimeInitdCount = 0;
+int newObjCount = 0;
 
 //when objects potentially collide this callback is called
 //you can rule out certain collisions or use different surface parameters
@@ -295,7 +295,8 @@ int main(int argc, char *argv[]) {
   //
   //-------------------------------------------------------------------------
   GAME_STATE gs = UNPAUSED;
-  DisableCursor();//Disable mouse cursor
+  DisableCursor(); // Disable mouse cursor
+  
   while (!WindowShouldClose()) { // Detect window close button or ESC key
     //-----------------------------------------------------------------------
     // Update
@@ -311,7 +312,7 @@ int main(int argc, char *argv[]) {
     const dReal *cp = dBodyGetPosition(car->bodies[0]);
     // π/2 = 90 degrees = approximately 1.570796 radians
     // If the car is on its side - and roll is approx 1.0 radians, it is flipped
-    if (fabs(roll) > (M_PI_2 - 0.5)) {
+    if (fabs(roll) > (M_PI_2 - 0.7)) {
       carFlipped++;
     } else {
       carFlipped = 0;
@@ -333,12 +334,45 @@ int main(int argc, char *argv[]) {
     camera.position.z -= (camera.position.z - co[2]) * lerp; // * (1/ft);
     UpdateCamera(&camera, 0);
 
+    // update the light shader with the camera view position
+    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
+                   &camera.position.x, SHADER_UNIFORM_VEC3);
+
+    frameTime += GetFrameTime();
+    int pSteps = 0;
+    physTime = GetTime();
+    
+    while (frameTime > physSlice) {
+      // check for collisions
+      // TODO use 2nd param data to pass custom structure with
+      // world and space ID's to avoid use of globals...
+      dSpaceCollide(space, 0, &nearCallback);
+
+      // step the world
+      dWorldQuickStep(world, physSlice); // NB fixed time step is important
+      dJointGroupEmpty(contactgroup);
+
+      frameTime -= physSlice;
+      pSteps++;
+      if (pSteps > maxPsteps) {
+        frameTime = 0;
+        break;
+      }
+    }
+
+    physTime = GetTime() - physTime;
+
+
+    if (!IsGamepadAvailable(gamepad)) { //gamepad is off, stop drawing the overlay
+      IsDrawingXboxOverlay = false;
+    }
+
     /*-----------------------------------------------------------------------
     // If Game is Unpaused/Playing
     // -------------------------------------------------------------------- */
     if (gs == UNPAUSED) {
       // if the car roll >90 degrees for 150 frames then flip it
-      if (carFlipped > 150)
+      if (carFlipped > 150 && cp[1] < 4.0f && !teleporting)
         unflipVehicle(car);
 
       accel *= .99;
@@ -437,57 +471,32 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
+        teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
-        double init_position_x = abs(cp[0]) > 240.0f ? 8.0f  : cp[0];
+        double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
+        // TODO: The init_pos y should be set relative to ground mesh Y below car
         dVector3 init_position = {init_position_x, 3.6, init_position_z};
-        teleportVehicle(car, init_position, carFlipped);
-	if (cp[1] < 4.8f){ //TODO: Change this to set a dynamic Y coordinate
-	                   //to enable the movement after landing after teleport
-	  for (int i = 0; i < 6; i++) {
-	    dBodyEnable(car->bodies[i]);
-	  }
-	}
+        // init_position becomes the exit position if still on ground mesh
+        teleportVehicle(car, init_position);
+        teleporting = false;
+        if (carFlipped > 20) {
+          unflipVehicle(car);
+        }
+        // to enable the movement after landing after a teleport
+        for (int i = 0; i < 2 && i > 3 && i < 6; i++) {
+          dBodyAddForce(car->bodies[i], 0.0f, -80.0f, 0.0f);
+          dBodyEnable(car->bodies[i]);
+        }
+        
       }
       
       // Spawn new objects 10 at a time(For now..)
       if (IsKeyPressed(KEY_F2)) {
-        numObjRuntimeInitdCount = 10;
-        totalObjCount += numObjRuntimeInitdCount;
-        objInGameInitd = createObjects(numObjRuntimeInitdCount, world, obj, space);
+        newObjCount = 10;
+        totalObjCount += newObjCount;
+        objInGameInitd = createObjects(newObjCount, world, obj, space);
       }
     }
-
-    if (!IsGamepadAvailable(gamepad)) { //gamepad is off, stop drawing the overlay
-      IsDrawingXboxOverlay = false;
-    }
-
-    // update the light shader with the camera view position
-    SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW],
-                   &camera.position.x, SHADER_UNIFORM_VEC3);
-
-    frameTime += GetFrameTime();
-    int pSteps = 0;
-    physTime = GetTime();
-    
-    while (frameTime > physSlice) {
-      // check for collisions
-      // TODO use 2nd param data to pass custom structure with
-      // world and space ID's to avoid use of globals...
-      dSpaceCollide(space, 0, &nearCallback);
-
-      // step the world
-      dWorldQuickStep(world, physSlice); // NB fixed time step is important
-      dJointGroupEmpty(contactgroup);
-
-      frameTime -= physSlice;
-      pSteps++;
-      if (pSteps > maxPsteps) {
-        frameTime = 0;
-        break;
-      }
-    }
-
-    physTime = GetTime() - physTime;
 
     // After Paused or Unpaused is initiated
     if (IsKeyPressed(KEY_F10) ||
@@ -615,12 +624,9 @@ int main(int argc, char *argv[]) {
                  20, WHITE);
       }
     }
-    if (IsDrawingXboxOverlay) {
+    if (IsDrawingXboxOverlay)
       drawXboxOverlay(gamepad, texXboxPad);
-    // if (teleporting) {
-       // DrawText(TextFormat("Teleporting vehicle..."), (screenWidth / 2) - 160,
-                // (screenHeight / 2), 40, YELLOW);
-    }
+
     if (gs == PAUSED) {
       DrawText(TextFormat("PAUSED"), (screenWidth / 2) - 120,
                (screenHeight / 2), 60, RED);

@@ -365,16 +365,10 @@ void unflipVehicle (vehicle *car)
   }
 }
 
-void teleportVehicle(vehicle *car, dReal *position, int carFlipped) {
-  if (carFlipped > 5)
-    unflipVehicle(car);  
+void teleportVehicle(vehicle *car, dReal *position) {  
   for (int i = 0; i < 6; i++) {
-    dBodySetForce(car->bodies[i], 0.0f, 40.0f, 0.0f);
     dBodySetLinearVel(car->bodies[i], 0, 0, 0);
-    dBodySetAngularVel(car->bodies[i], 0, 0, 0);
-    dBodySetTorque(car->bodies[i], 0, 0, 0);
-    dBodySetPosition(car->bodies[i], position[0], position[1], position[2]);
-    dBodyDisable(car->bodies[i]);
+    dBodySetPosition(car->bodies[i], -position[0], position[1], position[2]);
   }
 }
 
