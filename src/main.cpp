@@ -21,7 +21,7 @@
  *
  */
 
-#include "ode/objects.h"
+
 #include <array>
 #include <cassert>
 #include <cstdarg>
@@ -55,7 +55,7 @@ void DbgMsg(char *fmt, ...) {
 #include <rlights.h>
 
 #include <raymath.h>
-
+#include "ode/objects.h"
 #include <raylibODE.h>
 
 /*
@@ -441,9 +441,12 @@ int main(int argc, char *argv[]) {
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f  : cp[0];
         dVector3 init_position = {init_position_x, 3.6, init_position_z};
         teleportVehicle(car, init_position, carFlipped);
-        for (int i = 0; i < 6; i++) {
-          dBodyEnable(car->bodies[i]);
-        }
+	if (cp[1] < 4.8f){ //TODO: Change this to set a dynamic Y coordinate
+	                   //to enable the movement after landing after teleport
+	  for (int i = 0; i < 6; i++) {
+	    dBodyEnable(car->bodies[i]);
+	  }
+	}
       }
       
       // Spawn new objects 10 at a time(For now..)
