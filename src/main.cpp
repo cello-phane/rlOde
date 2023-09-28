@@ -474,7 +474,7 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
-        stackTime = elapsedTime + 0.2;
+        stackTime = elapsedTime + 0.4;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
