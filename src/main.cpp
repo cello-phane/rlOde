@@ -24,6 +24,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +56,6 @@ void DbgMsg(char *fmt, ...) {
 #include <rlights.h>
 
 #include <raymath.h>
-#include "ode/objects.h"
 #include <raylibODE.h>
 
 /*
@@ -133,6 +133,7 @@ static void nearCallback([[maybe_unused]] void *data, dGeomID o1, dGeomID o2) {
   }
 }
 
+double stackTime = 0;
 int main(int argc, char *argv[]) {
   int IsDrawingInfo = 1; // toggle with this boolean integer
   int DrawInfoState = 0; //0, 1, 2 represent [none, all, mph+fps]
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]) {
 
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
-
+  
   // Define the camera to look into our 3d world
   Camera3D camera = {0};
   // Camera position
@@ -200,6 +201,7 @@ int main(int argc, char *argv[]) {
   ball.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = planetTx;
   cylinder.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = drumTx;
   ground.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = grassTx;
+  SetTextureFilter(grassTx, TEXTURE_FILTER_TRILINEAR);
   Shader shader = LoadShader("data/simpleLight.vs", "data/simpleLight.fs");
   // load a shader and set up some uniforms
   shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
@@ -218,15 +220,15 @@ int main(int argc, char *argv[]) {
 
   // using 4 point lights, white, red, green and blue
   Light lights[MAX_LIGHTS];
-  Vector3 lightpos1 = {-25, 25, 25};
+  Vector3 lightpos1 = {-25, 25,  25};
   Vector3 lightpos2 = {-25, 25, -25};
   Vector3 lightpos3 = {-25, 25, -25};
-  Vector3 lightpos4 = {-25, 25, 25};
+  Vector3 lightpos4 = {-25, 25,  25};
   Vector3 light_dir_target = {10, 10, 10};
   Color color1 = {128, 128, 128, 255};
-  Color color2 = {64, 64, 64, 255};
-  Color color3 = {0, 255, 0, 255};
-  Color color4 = {0, 0, 255, 255};
+  Color color2 = {64,   64,  64, 255};
+  Color color3 = {0,   255,   0, 255};
+  Color color4 = {0,     0, 255, 255};
   lights[0] = CreateLight(LIGHT_POINT, lightpos1,
                           Vector3Zero(),    color1, shader);
   lights[1] = CreateLight(LIGHT_POINT, lightpos2,
@@ -257,9 +259,8 @@ int main(int argc, char *argv[]) {
   // for the ground trimesh
   int nV = ground.meshes[0].vertexCount;
   int *groundInd = static_cast<int*>(RL_MALLOC(nV * sizeof(int)));
-  for (int i = 0; i < nV; i++) {
+  for (int i = 0; i < nV; i++)
     groundInd[i] = i;
-  }
 
   // static tri mesh data to geom
   dTriMeshDataID triData = dGeomTriMeshDataCreate();
@@ -284,7 +285,8 @@ int main(int argc, char *argv[]) {
   // keep the physics fixed time in step with the render frame
   // rate which we don't know in advance
   double frameTime = 0;
-  double physTime = 0;
+  Timer *gameTimer = new Timer;
+  auto game_lifetime = -1;
   const double physSlice = 1.0 / 240.0;
   const int maxPsteps = 6;
   int carFlipped = 0; // number of frames car roll is >90
@@ -296,7 +298,8 @@ int main(int argc, char *argv[]) {
   //-------------------------------------------------------------------------
   GAME_STATE gs = UNPAUSED;
   DisableCursor(); // Disable mouse cursor
-  
+  double elapsedTime;
+
   while (!WindowShouldClose()) { // Detect window close button or ESC key
     //-----------------------------------------------------------------------
     // Update
@@ -312,7 +315,7 @@ int main(int argc, char *argv[]) {
     const dReal *cp = dBodyGetPosition(car->bodies[0]);
     // π/2 = 90 degrees = approximately 1.570796 radians
     // If the car is on its side - and roll is approx 1.0 radians, it is flipped
-    if (fabs(roll) > (M_PI_2 - 0.7)) {
+    if (fabs(roll) > (M_PI_2 - 0.8)) {
       carFlipped++;
     } else {
       carFlipped = 0;
@@ -340,8 +343,10 @@ int main(int argc, char *argv[]) {
 
     frameTime += GetFrameTime();
     int pSteps = 0;
-    physTime = GetTime();
     
+    StartTimer(gameTimer, game_lifetime);
+    elapsedTime += 10000 * (GetElapsed(*gameTimer));
+
     while (frameTime > physSlice) {
       // check for collisions
       // TODO use 2nd param data to pass custom structure with
@@ -359,19 +364,17 @@ int main(int argc, char *argv[]) {
         break;
       }
     }
-
-    physTime = GetTime() - physTime;
-
-
-    if (!IsGamepadAvailable(gamepad)) { //gamepad is off, stop drawing the overlay
+    
+    //physTime = GetTime() - physTime;
+    
+    if (!IsGamepadAvailable(gamepad)) //gamepad is off, stop drawing the overlay
       IsDrawingXboxOverlay = false;
-    }
 
     /*-----------------------------------------------------------------------
     // If Game is Unpaused/Playing
     // -------------------------------------------------------------------- */
     if (gs == UNPAUSED) {
-      // if the car roll >90 degrees for 150 frames then flip it
+      // if the car roll >90 degrees, for 150 frames, is relatively on ground
       if (carFlipped > 150 && cp[1] < 4.0f && !teleporting)
         unflipVehicle(car);
 
@@ -456,21 +459,22 @@ int main(int argc, char *argv[]) {
       // Levitate the car if Key Left Shift is held down
       if (IsKeyDown(KEY_LEFT_SHIFT) ||
           (IsGamepadAvailable(gamepad) &&
-           IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2)))
-      {
+           IsGamepadButtonDown(gamepad, GAMEPAD_BUTTON_RIGHT_TRIGGER_2))) {
+        if (!teleporting) { //if not already offgrid/teleporting
           for (int i = 0; i < 6; i++) {
             dMass cm;
             dBodyGetMass(car->bodies[i], &cm);
             float f = (6 + (static_cast<float>(i / 6) * 4)) * cm.mass;
-            if (i == 3) {
+            if (i == 3)
               f += f*0.5;
-            }
             dBodyAddForce(car->bodies[i], 0, f * 10, 0);
           }
+        }
       }
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
+        stackTime = elapsedTime + 0.2;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -478,18 +482,17 @@ int main(int argc, char *argv[]) {
         dVector3 init_position = {init_position_x, 3.6, init_position_z};
         // init_position becomes the exit position if still on ground mesh
         teleportVehicle(car, init_position);
-        teleporting = false;
-        if (carFlipped > 20) {
-          unflipVehicle(car);
-        }
         // to enable the movement after landing after a teleport
-        for (int i = 0; i < 2 && i > 3 && i < 6; i++) {
+        for (int i = 0; i < 2 && i > 2 && i < 6; i++) {
           dBodyAddForce(car->bodies[i], 0.0f, -80.0f, 0.0f);
           dBodyEnable(car->bodies[i]);
         }
-        
+        if (carFlipped)
+          unflipVehicle(car);
       }
-      
+      if (elapsedTime > stackTime) {
+          teleporting = false;
+        }
       // Spawn new objects 10 at a time(For now..)
       if (IsKeyPressed(KEY_F2)) {
         newObjCount = 10;
@@ -511,9 +514,8 @@ int main(int argc, char *argv[]) {
           if(dBodyIsEnabled(obj[i]))
             dBodyDisable(obj[i]);
         }
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++)
           dBodyDisable(car->bodies[i]);
-        }
       } else { // Unpause it
         gs = UNPAUSED;
         accel = paused_accel;
@@ -544,10 +546,8 @@ int main(int argc, char *argv[]) {
       if (IsKeyPressed(KEY_O) ||      // If O is pressed
           (IsGamepadAvailable(gamepad) && // or if xbox Y pressed while paused
            IsGamepadButtonPressed(gamepad, GAMEPAD_BUTTON_RIGHT_FACE_UP)))
-      {
         // Toggle between the states to draw info
         DrawInfoState = IsDrawingInfo ? (DrawInfoState + 1) % 3 : DrawInfoState;
-      }
 
       // Lights and Xbox overlay buttons
       if (IsKeyPressed(KEY_L) ||
@@ -557,7 +557,6 @@ int main(int argc, char *argv[]) {
         lights[0].enabled = !lights[0].enabled;
         UpdateLightValues(shader, lights[0]);
       }
-
     }
 
     //-----------------------------------------------------------------------
@@ -582,13 +581,13 @@ int main(int argc, char *argv[]) {
 
     EndMode3D();
 
-    const double *cv = dBodyGetLinearVel(car->bodies[0]);
-    Vector3 cvs = {
+    if (DrawInfoState > 0) {
+      const double *cv = dBodyGetLinearVel(car->bodies[0]);
+      Vector3 cvs = {
       static_cast<float>(cv[0]),
       static_cast<float>(cv[1]),
       static_cast<float>(cv[2])};
-    float vel = Vector3Length(cvs) * 2.23693629f;
-    if (DrawInfoState > 0) {
+      float vel = Vector3Length(cvs) * 2.23693629f;
       DrawText(TextFormat("%2i FPS", GetFPS()), 10, 12,
                20, GREEN);
       DrawText(TextFormat("mph %.2f", vel), 10, 35,
@@ -601,27 +600,20 @@ int main(int argc, char *argv[]) {
                  20, WHITE);
         DrawText(TextFormat("steer %4.4f", steer), 10, 105,
                  15, WHITE);
-        if (antiSway) {
-          DrawText("Anti sway bars ON", 10, 88, 15, WHITE);
-        }
-        else if (!antiSway) {
-          DrawText("Anti sway bars OFF", 10, 88, 15, PINK);
-        }
+        // if (antiSway) {
+        //   DrawText("Anti sway bars ON", 10, 88, 15, WHITE);
+        // }
+        // else if (!antiSway) {
+        //   DrawText("Anti sway bars OFF", 10, 88, 15, PINK);
+        // }
         DrawText(TextFormat("objects %i", totalObjCount), 10, 27,
                  10, WHITE);
         DrawText(TextFormat("roll %.4f", fabs(roll)), 10, 120,
                  15, WHITE);
         DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                             cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-        //Draw debug info
-        // DrawText(TextFormat("debug: %4.4f %4.4f %4.4f",
-        // debug.x,debug.y,debug.z), 7, 178, 20, WHITE);
-        DrawText(TextFormat("Phys steps per frame %i", pSteps), 10, 195,
-                 20, WHITE);
-        DrawText(TextFormat("Phys time per frame %i", physTime), 10, 210,
-                 20, WHITE);
-        DrawText(TextFormat("total time per frame %i", frameTime), 10, 225,
-                 20, WHITE);
+        // DrawText(TextFormat("Timer %.6f", elapsedTime*10000), 10, 210,
+                 // 20, WHITE);
       }
     }
     if (IsDrawingXboxOverlay)
@@ -645,8 +637,8 @@ int main(int argc, char *argv[]) {
                  (screenWidth / 2) - 183, (screenHeight / 2) + 90, 20, YELLOW);
       }
     }
-
-  EndDrawing();
+    
+    EndDrawing();
   }//End While WindowShouldClose
   // printf("%i %i\n",pSteps, numObj);
 
@@ -669,7 +661,7 @@ int main(int argc, char *argv[]) {
   RL_FREE(car);
   RL_FREE(groundInd);
   dGeomTriMeshDataDestroy(triData);
-
+  delete gameTimer;
   dJointGroupEmpty(contactgroup);
   dJointGroupDestroy(contactgroup);
   dSpaceDestroy(space);

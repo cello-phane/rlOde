@@ -27,6 +27,15 @@
 #include "ode/ode.h"
 #include "ode/objects.h"
 
+typedef struct Timer {
+  double startTime;   // Start time (seconds)
+  double lifeTime;    // Lifetime (seconds)
+} Timer;
+
+void StartTimer(Timer *timer, double lifetime);
+bool TimerDone(Timer timer);
+double GetElapsed(Timer timer);
+
 inline float rndf(float min, float max);
 //macro candidate ? marcro's? eek!
 

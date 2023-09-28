@@ -27,9 +27,25 @@
 #include "raymath.h"
 #include "rlgl.h"
 
-#include <ode/ode.h>
+#include "ode/ode.h"
 #include "ode/objects.h"
 #include "raylibODE.h"
+
+void StartTimer(Timer *timer, double lifetime)
+{
+  timer->startTime = GetTime();
+  timer->lifeTime = lifetime;
+}
+
+bool TimerDone(Timer timer)
+{
+  return GetTime() - timer.startTime >= timer.lifeTime;
+}
+
+double GetElapsed(Timer timer)
+{
+  return GetTime() - timer.startTime;
+}
 
 void drawXboxOverlay(int gamepad, Texture2D &texXboxPad) {
   if (IsKeyPressed(KEY_LEFT) && gamepad > 0) gamepad--;
@@ -203,7 +219,6 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world)
   float wheelRadius = 0.7, wheelWidth = 0.5;
 
   vehicle* car = static_cast<vehicle*>(RL_MALLOC(sizeof(vehicle)));
-  // vehicle* car = new vehicle;
   // car body
   dMass m;
   dMassSetBox(&m, 1, carScale.x, carScale.y, carScale.z);  // density
