@@ -473,7 +473,7 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
-        endTime = elapsedTime + 0.3;
+        endTime = elapsedTime + 2500.0;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -614,7 +614,7 @@ int main(int argc, char *argv[]) {
                  15, WHITE);
         DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                             cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-        DrawText(TextFormat("Timer %.6f", elapsedTime*10000), 10, 210,
+        DrawText(TextFormat("Timer %.6f", elapsedTime), 10, 210,
                  20, WHITE);
       }
     }

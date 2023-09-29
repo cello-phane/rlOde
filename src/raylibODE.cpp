@@ -31,8 +31,8 @@
 #include "ode/objects.h"
 #include "raylibODE.h"
 
-void StartTimer(Timer *timer, double lifetime)
-{
+void StartTimer(Timer *timer, double lifetime) {
+  timer = static_cast<Timer*>(RL_MALLOC(sizeof(double)));
   timer->startTime = GetTime();
   timer->lifeTime = lifetime;
 }

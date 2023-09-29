@@ -65,7 +65,7 @@ endif()
 list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB} opengl32)
 if(WINDOWS)
 # For Windows: WinMM lib is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER
-list(APPEND libs gdi32 winmm)
+list(APPEND libs winmm)
 endif(WINDOWS)
 
 # Source files
