@@ -473,11 +473,7 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
-<<<<<<< HEAD
-        stackTime = elapsedTime + 0.4;
-=======
-        endTime = elapsedTime*10000 + 0.3;
->>>>>>> ab45aae (Changing the teleport yet again.)
+        endTime = elapsedTime + 0.3;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -492,11 +488,11 @@ int main(int argc, char *argv[]) {
         }
         if (carFlipped > 100) {
           unflipVehicle(car);
-          if (elapsedTime*10000 > endTime)
+          if (elapsedTime > endTime)
             teleporting = false;
         }
       }
-      if (elapsedTime*10000 > endTime)
+      if (elapsedTime > endTime)
           teleporting = false;
       
       // Spawn new objects 10 at a time(For now..)
