@@ -56,6 +56,7 @@ void DbgMsg(char *fmt, ...) {
 #include <rlights.h>
 
 #include <raymath.h>
+#include "ode/objects.h"
 #include <raylibODE.h>
 
 /*
@@ -133,7 +134,7 @@ static void nearCallback([[maybe_unused]] void *data, dGeomID o1, dGeomID o2) {
   }
 }
 
-double stackTime = 0;
+double endTime = 0;
 int main(int argc, char *argv[]) {
   int IsDrawingInfo = 1; // toggle with this boolean integer
   int DrawInfoState = 0; //0, 1, 2 represent [none, all, mph+fps]
@@ -195,13 +196,12 @@ int main(int argc, char *argv[]) {
   Texture planetTx = LoadTexture("data/planet.png");
   Texture crateTx = LoadTexture("data/crate.png");
   Texture drumTx = LoadTexture("data/drum.png");
-  Texture grassTx = LoadTexture("data/grass.png");
-
+  Texture vectileTx = LoadTexture("data/grass.png");
   box.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = crateTx;
   ball.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = planetTx;
   cylinder.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = drumTx;
-  ground.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = grassTx;
-  SetTextureFilter(grassTx, TEXTURE_FILTER_TRILINEAR);
+  ground.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = vectileTx;
+  // SetTextureFilter(grassTx, TEXTURE_FILTER_TRILINEAR);
   Shader shader = LoadShader("data/simpleLight.vs", "data/simpleLight.fs");
   // load a shader and set up some uniforms
   shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocation(shader, "matModel");
@@ -226,8 +226,8 @@ int main(int argc, char *argv[]) {
   Vector3 lightpos4 = {-25, 25,  25};
   Vector3 light_dir_target = {10, 10, 10};
   Color color1 = {128, 128, 128, 255};
-  Color color2 = {64,   64,  64, 255};
-  Color color3 = {0,   255,   0, 255};
+  Color color2 = {64,   64, 255, 255};
+  Color color3 = {  128,   255, 255, 255};
   Color color4 = {0,     0, 255, 255};
   lights[0] = CreateLight(LIGHT_POINT, lightpos1,
                           Vector3Zero(),    color1, shader);
@@ -242,8 +242,7 @@ int main(int argc, char *argv[]) {
   dAllocateODEDataForThread(dAllocateMaskAll);
 
   world = dWorldCreate();
-  // printf("phys iterations per step %i\n",
-  // dWorldGetQuickStepNumIterations(world));
+  printf("phys iterations per step %i\n", dWorldGetQuickStepNumIterations(world));
   space = dHashSpaceCreate(NULL);
   contactgroup = dJointGroupCreate(0);
   dWorldSetGravity(world, 0, -9.8, 0); // gravity
@@ -345,7 +344,7 @@ int main(int argc, char *argv[]) {
     int pSteps = 0;
     
     StartTimer(gameTimer, game_lifetime);
-    elapsedTime += 10000 * (GetElapsed(*gameTimer));
+    elapsedTime += GetElapsed(*gameTimer);
 
     while (frameTime > physSlice) {
       // check for collisions
@@ -374,7 +373,7 @@ int main(int argc, char *argv[]) {
     // If Game is Unpaused/Playing
     // -------------------------------------------------------------------- */
     if (gs == UNPAUSED) {
-      // if the car roll >90 degrees, for 150 frames, is relatively on ground
+      // if the car roll >90 degrees, for 150 frames, and is relatively on ground
       if (carFlipped > 150 && cp[1] < 4.0f && !teleporting)
         unflipVehicle(car);
 
@@ -474,7 +473,11 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
+<<<<<<< HEAD
         stackTime = elapsedTime + 0.4;
+=======
+        endTime = elapsedTime*10000 + 0.3;
+>>>>>>> ab45aae (Changing the teleport yet again.)
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -483,16 +486,19 @@ int main(int argc, char *argv[]) {
         // init_position becomes the exit position if still on ground mesh
         teleportVehicle(car, init_position);
         // to enable the movement after landing after a teleport
-        for (int i = 0; i < 2 && i > 2 && i < 6; i++) {
-          dBodyAddForce(car->bodies[i], 0.0f, -80.0f, 0.0f);
+        for (int i = 0; i < 6; i++) {
+          dBodyAddForce(car->bodies[i], 0.0f, -300.0f, 0.0f);
           dBodyEnable(car->bodies[i]);
         }
-        if (carFlipped)
+        if (carFlipped > 100) {
           unflipVehicle(car);
-      }
-      if (elapsedTime > stackTime) {
-          teleporting = false;
+          if (elapsedTime*10000 > endTime)
+            teleporting = false;
         }
+      }
+      if (elapsedTime*10000 > endTime)
+          teleporting = false;
+      
       // Spawn new objects 10 at a time(For now..)
       if (IsKeyPressed(KEY_F2)) {
         newObjCount = 10;
@@ -612,8 +618,8 @@ int main(int argc, char *argv[]) {
                  15, WHITE);
         DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                             cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-        // DrawText(TextFormat("Timer %.6f", elapsedTime*10000), 10, 210,
-                 // 20, WHITE);
+        DrawText(TextFormat("Timer %.6f", elapsedTime*10000), 10, 210,
+                 20, WHITE);
       }
     }
     if (IsDrawingXboxOverlay)
@@ -652,7 +658,7 @@ int main(int argc, char *argv[]) {
   UnloadTexture(drumTx);
   UnloadTexture(planetTx);
   UnloadTexture(crateTx);
-  UnloadTexture(grassTx);
+  UnloadTexture(vectileTx);
   UnloadShader(shader);
   if(objInGameInitd != nullptr)
     RL_FREE(objInGameInitd);
