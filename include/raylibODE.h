@@ -22,8 +22,6 @@
  */
 
 #include "raylib.h"
-#include "raymath.h"
-
 #include "ode/ode.h"
 #include "ode/objects.h"
 
@@ -40,7 +38,7 @@ inline float rndf(float min, float max);
 //macro candidate ? marcro's? eek!
 
 float rndf(float min, float max) {
-  return (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * (max - min) + min;
+  return ((float)(rand()) / (float)(RAND_MAX)) * (max - min) + min;
 }
 
 // TODO extern for now - need to add function set these and keep them here...
@@ -76,4 +74,4 @@ void updateVehicle(vehicle *car, float accel, float maxAccelForce,
 void unflipVehicle (vehicle *car);
 bool checkColliding(dGeomID g);
 void teleportVehicle(vehicle *car, dReal *position);
-dBodyID* createObjects(int &numObj, dWorldID &world, dBodyID *obj, dSpaceID &space);
+dBodyID* createObjects(int numObj, dWorldID &world, dSpaceID &space);

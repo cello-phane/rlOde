@@ -6,15 +6,6 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-# Check platforms
-if (CMAKE_HOST_WIN32)
-    set(WINDOWS 1)
-elseif(CMAKE_HOST_APPLE)
-    set(MACOS 1)
-elseif(CMAKE_HOST_UNIX)
-    set(LINUX 1)
-endif()
-
 # Output to terminal
 if(CMAKE_CL_64)
     MESSAGE( STATUS "-------- 64-bit ---------")
@@ -34,6 +25,8 @@ set(FETCH_RL OFF)
 if(NOT FETCH_RL)
   #-----Manually set Raylib-----#
   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
   else()
     set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
@@ -57,16 +50,16 @@ endif()
 #----------Manually set ODE---------#
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
 else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode_double.a)
 endif()
   
 # Libraries
 list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB} opengl32)
-if(WINDOWS)
 # For Windows: WinMM lib is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER
 list(APPEND libs winmm)
-endif(WINDOWS)
 
 # Source files
 set(PROJECT_SOURCES src/main.cpp src/raylibODE.cpp)

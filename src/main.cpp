@@ -29,13 +29,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#ifdef _WIN32
-#ifdef _MSC_VER
-#pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
-#endif // MSVC
-#define APP_NAME_STR_LEN 80
-#endif // _WIN32
-
 bool in_callback = false;
 #define ERR_EXIT(err_msg, err_class)                \
   do {                                              \
@@ -56,7 +49,6 @@ void DbgMsg(char *fmt, ...) {
 #include <rlights.h>
 
 #include <raymath.h>
-#include "ode/objects.h"
 #include <raylibODE.h>
 
 /*
@@ -226,9 +218,9 @@ int main(int argc, char *argv[]) {
   Vector3 lightpos4 = {-25, 25,  25};
   Vector3 light_dir_target = {10, 10, 10};
   Color color1 = {128, 128, 128, 255};
-  Color color2 = {64,   64, 255, 255};
-  Color color3 = {  128,   255, 255, 255};
-  Color color4 = {0,     0, 255, 255};
+  Color color2 = { 64,  64, 255, 255};
+  Color color3 = {128, 255,   0, 255};
+  Color color4 = {  0,   0, 255, 255};
   lights[0] = CreateLight(LIGHT_POINT, lightpos1,
                           Vector3Zero(),    color1, shader);
   lights[1] = CreateLight(LIGHT_POINT, lightpos2,
@@ -257,7 +249,7 @@ int main(int argc, char *argv[]) {
   // create some decidedly sub optimal indices!
   // for the ground trimesh
   int nV = ground.meshes[0].vertexCount;
-  int *groundInd = static_cast<int*>(RL_MALLOC(nV * sizeof(int)));
+  int *groundInd = (int*)(RL_MALLOC(nV * sizeof(int)));
   for (int i = 0; i < nV; i++)
     groundInd[i] = i;
 
@@ -269,7 +261,7 @@ int main(int argc, char *argv[]) {
   dCreateTriMesh(space, triData, NULL, NULL, NULL);
   // This used to be dBodyID obj[numObj];
   // We now use the function included in this source file
-  dBodyID *obj = createObjects(numObj, world, obj, space);
+  dBodyID *obj = createObjects(numObj, world, space);
   totalObjCount += numObj;
 
   float   paused_accel = 0.0f;
@@ -284,7 +276,7 @@ int main(int argc, char *argv[]) {
   // keep the physics fixed time in step with the render frame
   // rate which we don't know in advance
   double frameTime = 0;
-  Timer *gameTimer = new Timer;
+  Timer *gameTimer = (Timer*)(RL_MALLOC(sizeof(double)));
   auto game_lifetime = -1;
   const double physSlice = 1.0 / 240.0;
   const int maxPsteps = 6;
@@ -319,8 +311,8 @@ int main(int argc, char *argv[]) {
     } else {
       carFlipped = 0;
     }
-    Vector3 cam_target = {static_cast<float>(cp[0]), static_cast<float>(cp[1]),
-                          static_cast<float>(cp[2]) };
+    Vector3 cam_target = {(float)(cp[0]), (float)(cp[1]),
+                          (float)(cp[2]) };
 
     updateVehicle(car, accel, 800.0, steer, 10.0);
 
@@ -441,7 +433,7 @@ int main(int argc, char *argv[]) {
                 dMass mass;
                 dBodyGetMass(obj[i], &mass);
                 // give some object more force than others
-                float f = (6 + (static_cast<float>(i / numObj) * 4)) * mass.mass;
+                float f = (6 + ((float)(i / numObj) * 4)) * mass.mass;
                 dBodyAddForce(obj[i], rndf(-f, f), f * 10, rndf(-f, f));
               }
             }
@@ -463,7 +455,7 @@ int main(int argc, char *argv[]) {
           for (int i = 0; i < 6; i++) {
             dMass cm;
             dBodyGetMass(car->bodies[i], &cm);
-            float f = (6 + (static_cast<float>(i / 6) * 4)) * cm.mass;
+            float f = (6 + ((float)(i / 6) * 4)) * cm.mass;
             if (i == 3)
               f += f*0.5;
             dBodyAddForce(car->bodies[i], 0, f * 10, 0);
@@ -473,7 +465,7 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
-        endTime = elapsedTime + 2500.0;
+        endTime = elapsedTime*1000000 + 30.0f;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -486,20 +478,20 @@ int main(int argc, char *argv[]) {
           dBodyAddForce(car->bodies[i], 0.0f, -300.0f, 0.0f);
           dBodyEnable(car->bodies[i]);
         }
-        if (carFlipped > 100) {
-          unflipVehicle(car);
-          if (elapsedTime > endTime)
-            teleporting = false;
-        }
       }
-      if (elapsedTime > endTime)
+      if (carFlipped > 100) {
+          unflipVehicle(car);
+          if (elapsedTime*1000000 > endTime)
+            teleporting = false;
+      } else {
+        if (elapsedTime*1000000 > endTime)
           teleporting = false;
-      
+      }
       // Spawn new objects 10 at a time(For now..)
       if (IsKeyPressed(KEY_F2)) {
         newObjCount = 10;
         totalObjCount += newObjCount;
-        objInGameInitd = createObjects(newObjCount, world, obj, space);
+        objInGameInitd = createObjects(newObjCount, world, space);
       }
     }
 
@@ -585,10 +577,7 @@ int main(int argc, char *argv[]) {
 
     if (DrawInfoState > 0) {
       const double *cv = dBodyGetLinearVel(car->bodies[0]);
-      Vector3 cvs = {
-      static_cast<float>(cv[0]),
-      static_cast<float>(cv[1]),
-      static_cast<float>(cv[2])};
+      Vector3 cvs = { (float)(cv[0]), (float)(cv[1]), (float)(cv[2]) };
       float vel = Vector3Length(cvs) * 2.23693629f;
       DrawText(TextFormat("%2i FPS", GetFPS()), 10, 12,
                20, GREEN);
@@ -614,7 +603,7 @@ int main(int argc, char *argv[]) {
                  15, WHITE);
         DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                             cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-        DrawText(TextFormat("Timer %.6f", elapsedTime), 10, 210,
+        DrawText(TextFormat("Timer %.2f", elapsedTime*1000000), 10, 210,
                  20, WHITE);
       }
     }
@@ -663,7 +652,7 @@ int main(int argc, char *argv[]) {
   RL_FREE(car);
   RL_FREE(groundInd);
   dGeomTriMeshDataDestroy(triData);
-  delete gameTimer;
+  RL_FREE(gameTimer);
   dJointGroupEmpty(contactgroup);
   dJointGroupDestroy(contactgroup);
   dSpaceDestroy(space);

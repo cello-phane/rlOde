@@ -22,17 +22,12 @@
  */
 
 #include "ode/mass.h"
-#include "ode/matrix.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
-
-#include "ode/ode.h"
-#include "ode/objects.h"
 #include "raylibODE.h"
 
 void StartTimer(Timer *timer, double lifetime) {
-  timer = static_cast<Timer*>(RL_MALLOC(sizeof(double)));
   timer->startTime = GetTime();
   timer->lifeTime = lifetime;
 }
@@ -218,7 +213,7 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world)
   Vector3 carScale = {4.0, 0.5, 1.1};
   float wheelRadius = 0.7, wheelWidth = 0.5;
 
-  vehicle* car = static_cast<vehicle*>(RL_MALLOC(sizeof(vehicle)));
+  vehicle* car = (vehicle*)(RL_MALLOC(sizeof(vehicle)));
   // car body
   dMass m;
   dMassSetBox(&m, 1, carScale.x, carScale.y, carScale.z);  // density
@@ -294,7 +289,7 @@ vehicle* CreateVehicle(dSpaceID space, dWorldID world)
       dJointSetHinge2Anchor(car->joints[i], wPos[0], wPos[1], wPos[2]);
 
       dReal axis1[] = { 0, -1, 0 };
-      dReal axis2[] = { 0, 0, static_cast<dReal>(((i % 2) == 0) ? -1 : 1)};
+      dReal axis2[] = { 0, 0, (dReal)(((i % 2) == 0) ? -1 : 1)};
 
       // replacement for deprecated calls
       dJointSetHinge2Axes (car->joints[i], axis1, axis2);
@@ -388,8 +383,8 @@ void teleportVehicle(vehicle *car, dReal *position) {
 }
 
 
-dBodyID* createObjects(int &numObj, dWorldID &world, dBodyID *obj, dSpaceID &space) {
-  obj = static_cast<dBodyID*>(RL_MALLOC(numObj * sizeof(dBodyID)));
+dBodyID* createObjects(int numObj, dWorldID &world, dSpaceID &space) {
+  dBodyID *obj = (dBodyID*)(RL_MALLOC(numObj * sizeof(dBodyID)));
   // create the physics bodies
   for (int i = 0; i < numObj; i++) {
     obj[i] = dBodyCreate(world);
