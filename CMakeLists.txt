@@ -21,7 +21,7 @@ set(RL_INCLUDE_DIR include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
 
 # set ON to download and compile Raylib lib
-set(FETCH_RL OFF)
+set(FETCH_RL ON)
 if(NOT FETCH_RL)
   #-----Manually set Raylib-----#
   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -53,13 +53,25 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
 else()
-  set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode_double.a)
+  set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
+
+list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB})
+
+if (UNIX)
+set(CMAKE_CXX_FLAGS "-lstdc++ -L/usr/X11R7/lib64/ -I/usr/X11R7/include")
+endif (UNIX)
   
 # Libraries
-list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB} opengl32)
+if (WIN32)
+list(APPEND libs opengl32)
 # For Windows: WinMM lib is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER
 list(APPEND libs winmm)
+endif (WIN32)
+
+if (UNIX)
+list(APPEND libs Xext GL X11 GLU m)
+endif (UNIX)
 
 # Source files
 set(PROJECT_SOURCES src/main.cpp src/raylibODE.cpp)
