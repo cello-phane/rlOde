@@ -16,7 +16,6 @@ endif()
 MESSAGE( STATUS "CXX Compiler ----> ${CMAKE_CXX_COMPILER_ID}")
 
 # set lib and include paths
-set(libs)
 set(RL_INCLUDE_DIR include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
 
@@ -56,6 +55,7 @@ else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
 
+# Project Specifics
 list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB})
 
 find_library(MATH_LIBRARY m REQUIRED)
