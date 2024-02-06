@@ -56,22 +56,18 @@ else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
 
-list(APPEND libs ${RAYLIB_LIB} ${ODE_LIB})
+list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB})
 
-if (UNIX)
-set(CMAKE_CXX_FLAGS "-lstdc++ -L/usr/X11R7/lib64/ -I/usr/X11R7/include")
-endif (UNIX)
-  
-# Libraries
-if (WIN32)
-list(APPEND libs opengl32)
-# For Windows: WinMM lib is only used to get a hi-res timer and it can be avoided commenting SUPPORT_WINMM_HIGHRES_TIMER
-list(APPEND libs winmm)
-endif (WIN32)
+find_library(MATH_LIBRARY m REQUIRED)
+find_library(STDCPP stdc++ REQUIRED)
 
-if (UNIX)
-list(APPEND libs Xext GL X11 GLU m)
-endif (UNIX)
+# Linux Specifics
+if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+    # X11
+    find_package(X11 REQUIRED)
+    find_package(OpenGL REQUIRED)
+    include_directories(${X11_INCLUDE_DIRS})
+endif (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 
 # Source files
 set(PROJECT_SOURCES src/main.cpp src/raylibODE.cpp)
@@ -81,6 +77,7 @@ add_executable(${PROJECT_NAME})
 
 # Optional flags
 set(CMAKE_BUILD_TYPE "Release")
+# for LSP but this may be deprecated depending on cmake version
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Include and link
@@ -90,7 +87,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${RL_INCLUDE_DIR}
     ${ODE_INCLUDE_DIR}
   )
-target_link_libraries(${PROJECT_NAME} PRIVATE ${libs})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES} ${X11_LIBRARIES} ${OpenGL} ${MATH_LIBRARY} ${STDCPP})
 
 # Optional: Compiler-specific silence warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
