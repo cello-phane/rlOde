@@ -30,19 +30,6 @@
 #include <cstdlib>
 
 bool in_callback = false;
-#define ERR_EXIT(err_msg, err_class)                \
-  do {                                              \
-    if (!demo->suppress_popups)                     \
-      MessageBox(NULL, err_msg, err_class, MB_OK);	\
-    exit(1);                                        \
-  } while (0)
-void DbgMsg(char *fmt, ...) {
-  va_list va;
-  va_start(va, fmt);
-  vprintf(fmt, va);
-  va_end(va);
-  fflush(stdout);
-}
 
 #include <raylib.h>
 #define RLIGHTS_IMPLEMENTATION
@@ -126,7 +113,6 @@ static void nearCallback([[maybe_unused]] void *data, dGeomID o1, dGeomID o2) {
   }
 }
 
-double endTime = 0;
 int main(int argc, char *argv[]) {
   int IsDrawingInfo = 1; // toggle with this boolean integer
   int DrawInfoState = 0; //0, 1, 2 represent [none, all, mph+fps]
@@ -276,8 +262,6 @@ int main(int argc, char *argv[]) {
   // keep the physics fixed time in step with the render frame
   // rate which we don't know in advance
   double frameTime = 0;
-  Timer *gameTimer = (Timer*)(RL_MALLOC(sizeof(double)));
-  auto game_lifetime = -1;
   const double physSlice = 1.0 / 240.0;
   const int maxPsteps = 6;
   int carFlipped = 0; // number of frames car roll is >90
@@ -289,7 +273,6 @@ int main(int argc, char *argv[]) {
   //-------------------------------------------------------------------------
   GAME_STATE gs = UNPAUSED;
   DisableCursor(); // Disable mouse cursor
-  double elapsedTime;
 
   while (!WindowShouldClose()) { // Detect window close button or ESC key
     //-----------------------------------------------------------------------
@@ -334,9 +317,6 @@ int main(int argc, char *argv[]) {
 
     frameTime += GetFrameTime();
     int pSteps = 0;
-    
-    StartTimer(gameTimer, game_lifetime);
-    elapsedTime += GetElapsed(*gameTimer);
 
     while (frameTime > physSlice) {
       // check for collisions
@@ -465,7 +445,6 @@ int main(int argc, char *argv[]) {
 
       // Fallen off the ledge or flown too high
       if (cp[1] < -10.0 || cp[1] > 30.0) {
-        endTime = elapsedTime*1000000 + 30.0f;
         teleporting = true;
         double init_position_z = abs(cp[2]) > 240.0f ? 60.0f : cp[2];
         double init_position_x = abs(cp[0]) > 240.0f ? 8.0f : cp[0];
@@ -481,11 +460,11 @@ int main(int argc, char *argv[]) {
       }
       if (carFlipped > 100) {
           unflipVehicle(car);
-          if (elapsedTime*1000000 > endTime)
-            teleporting = false;
-      } else {
-        if (elapsedTime*1000000 > endTime)
+          //TODO: set timer for a teleporting delay
           teleporting = false;
+      } else {
+        //TOD: set a delay
+        teleporting = false;
       }
       // Spawn new objects 10 at a time(For now..)
       if (IsKeyPressed(KEY_F2)) {
@@ -534,7 +513,7 @@ int main(int argc, char *argv[]) {
       {
         // "select" is pressed -wait one sec- to delay the over-reactive xbox
         // ctrls alternate [on : off] to draw overlay
-        _sleep(1);
+        // _sleep(1);
         IsDrawingXboxOverlay = !IsDrawingXboxOverlay;
       }
       if (IsKeyPressed(KEY_O) ||      // If O is pressed
@@ -561,7 +540,7 @@ int main(int argc, char *argv[]) {
     ClearBackground(BLACK);
 
     BeginMode3D(camera);
-    Vector3 ground_vec = {0.0,0.0,0.0,};
+    Vector3 ground_vec = {0.0,0.0,0.0};
     DrawModel(ground, ground_vec, 1.0, Color{GREEN});
 
     // NB normally you wouldn't be drawing the collision meshes
@@ -603,8 +582,6 @@ int main(int argc, char *argv[]) {
                  15, WHITE);
         DrawText(TextFormat("car x: %.2f\n \t\t y: %.2f\n \t\t z: %.2f\n",
                             cp[0], cp[1], cp[2]), 10, 137, 15, WHITE);
-        DrawText(TextFormat("Timer %.2f", elapsedTime*1000000), 10, 210,
-                 20, WHITE);
       }
     }
     if (IsDrawingXboxOverlay)
@@ -652,7 +629,6 @@ int main(int argc, char *argv[]) {
   RL_FREE(car);
   RL_FREE(groundInd);
   dGeomTriMeshDataDestroy(triData);
-  RL_FREE(gameTimer);
   dJointGroupEmpty(contactgroup);
   dJointGroupDestroy(contactgroup);
   dSpaceDestroy(space);
