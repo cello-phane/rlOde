@@ -55,7 +55,10 @@ else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
 
+<<<<<<< HEAD
 # Project Specifics
+=======
+>>>>>>> 87df2fb (removed the "Timer" and getting ready to place an actual working game timer)
 list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB})
 
 find_library(MATH_LIBRARY m REQUIRED)
