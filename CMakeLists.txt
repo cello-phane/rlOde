@@ -55,14 +55,7 @@ else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
 
-<<<<<<< HEAD
-# Project Specifics
-=======
->>>>>>> 87df2fb (removed the "Timer" and getting ready to place an actual working game timer)
-list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB})
-
-find_library(MATH_LIBRARY m REQUIRED)
-find_library(STDCPP stdc++ REQUIRED)
+list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++)
 
 # Linux Specifics
 if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
@@ -91,7 +84,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${ODE_INCLUDE_DIR}
   )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES} ${X11_LIBRARIES} ${OpenGL} ${MATH_LIBRARY} ${STDCPP})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES} ${X11_LIBRARIES} ${OpenGL})
 
 # Optional: Compiler-specific silence warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

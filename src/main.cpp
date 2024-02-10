@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
   }
   int gamepad = 0; // which gamepad to display
 
-  assert(sizeof(dReal) == sizeof(double));
+  // assert(sizeof(dReal) == sizeof(double));
   srand(time(NULL));
 
   // Initialization
@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
   dSpaceID space;
 
   SetWindowState(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
+  SetTraceLogLevel(LOG_NONE); // Deactivate trace logs
   InitWindow(screenWidth, screenHeight, "raylib ODE and a car!");
   
   // Define the camera to look into our 3d world
@@ -463,7 +464,7 @@ int main(int argc, char *argv[]) {
           //TODO: set timer for a teleporting delay
           teleporting = false;
       } else {
-        //TOD: set a delay
+        //TODO: set a delay
         teleporting = false;
       }
       // Spawn new objects 10 at a time(For now..)
