@@ -16,19 +16,20 @@ endif()
 MESSAGE( STATUS "CXX Compiler ----> ${CMAKE_CXX_COMPILER_ID}")
 
 # set lib and include paths
-set(RL_INCLUDE_DIR include/raylib)#raylib is inside the "include" dir
-set(ODE_INCLUDE_DIR ode/include)#include path for ode is in a subdir
+set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)#raylib is inside the "include" dir
+set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)#include path for ode is in a subdir
 
 # set ON to download and compile Raylib lib
 set(FETCH_RL ON)
 if(NOT FETCH_RL)
+find_library(raylib libraylib)
   #-----Manually set Raylib-----#
   if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylib.lib)
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylib.lib)
   else()
-    set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/libraylib.a)
+    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
   endif()
 else()
   #---------Fetch Raylib--------#
@@ -55,7 +56,7 @@ else()
   set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a)
 endif()
 
-list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++)
+list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++ m)
 
 # Linux Specifics
 if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)

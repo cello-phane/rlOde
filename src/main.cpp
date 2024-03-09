@@ -23,11 +23,12 @@
 
 
 #include <array>
-#include <cassert>
 #include <cmath>
-#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+
+//#include <cassert>
+//#include <cstdarg>
 
 bool in_callback = false;
 
@@ -551,7 +552,7 @@ int main(int argc, char *argv[]) {
     // body
     drawAllSpaceGeoms(space);
     // Tile grid on the z-plane
-    // DrawGrid(501, 1.f);
+    DrawGrid(501, 1.f);
 
     EndMode3D();
 
