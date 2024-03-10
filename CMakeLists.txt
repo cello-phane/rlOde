@@ -4,7 +4,7 @@ set(PROJECT_NAME "rlOde")
 
 project(${PROJECT_NAME} LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 # Output to terminal
 if(CMAKE_CL_64)
@@ -20,7 +20,7 @@ set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)#raylib is inside 
 set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)#include path for ode is in a subdir
 
 # set ON to download and compile Raylib lib
-set(FETCH_RL ON)
+set(FETCH_RL OFF)
 if(NOT FETCH_RL)
 find_library(raylib libraylib)
   #-----Manually set Raylib-----#
@@ -58,14 +58,6 @@ endif()
 
 list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++ m)
 
-# Linux Specifics
-if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-    # X11
-    find_package(X11 REQUIRED)
-    find_package(OpenGL REQUIRED)
-    include_directories(${X11_INCLUDE_DIRS})
-endif (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-
 # Source files
 set(PROJECT_SOURCES src/main.cpp src/raylibODE.cpp)
 
@@ -75,7 +67,7 @@ add_executable(${PROJECT_NAME})
 # Optional flags
 set(CMAKE_BUILD_TYPE "Release")
 # for LSP but this may be deprecated depending on cmake version
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 
 # Include and link
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
@@ -85,7 +77,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${ODE_INCLUDE_DIR}
   )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES} ${X11_LIBRARIES} ${OpenGL})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES})
 
 # Optional: Compiler-specific silence warnings
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
