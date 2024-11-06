@@ -36,7 +36,6 @@ debug release: clean $(APPNAME)
 
 .PHONY:	clean
 clean:
-	rm build/CMakeCache.txt
 	rm build/$(APPNAME) -f
 
 style: $(SRC) $(INC)
