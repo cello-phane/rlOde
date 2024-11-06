@@ -3,7 +3,7 @@ CC=gcc
 CXX=g++
 COMPILER=$(CXX)
 
-LDFLAGS = -L./
+LDFLAGS = -L./lib
 LDLIBS := -l:raylib.dll -l:ode_double.dll -lopengl32 -lgdi32 -lwinmm
 
 INCLUDEPATHS:= -Iode/include/ode -Iode/include -Iinclude/raylib -Iinclude -I./
