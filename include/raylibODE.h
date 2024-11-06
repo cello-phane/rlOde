@@ -74,4 +74,4 @@ void updateVehicle(vehicle *car, float accel, float maxAccelForce,
 void unflipVehicle (vehicle *car);
 bool checkColliding(dGeomID g);
 void teleportVehicle(vehicle *car, dReal *position);
-dBodyID* createObjects(int numObj, dWorldID &world, dSpaceID &space);
+dBodyID* createObjects(int numObj, dWorldID &world, dSpaceID &space, bool addingMoreObjs, int existingObjCount, dBodyID *obj);
