@@ -52,47 +52,35 @@ include(ExternalProject)
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
 
-# Optionally add the ode_download directory as a subproject
 if(ENABLE_ODE)
-    # Check if the ode_download directory exists
-    if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ode_download")
-        message(FATAL_ERROR "Directory ode_download does not exist.")
-    endif()
+    # Download and extract ODE only if `ode_download` is empty
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/CMakeLists.txt")
+      message("ODE download directory is empty. Downloading and extracting ODE...")
+      
+      # Download the ODE archive
+      file(DOWNLOAD 
+        https://bitbucket.org/odedevs/ode/downloads/ode-0.16.5.tar.gz 
+        ${CMAKE_SOURCE_DIR}/ode-0.16.5.tar.gz
+      )
 
-    # Check if the directory contains necessary CMake files
-    file(GLOB_RECURSE odefiles "${CMAKE_CURRENT_SOURCE_DIR}/ode_download/*")
-    if(odefiles)
-        message("Directory is not empty")
-    else()
-        message("Directory is empty. Downloading ODE...")
-        file(DOWNLOAD https://bitbucket.org/odedevs/ode/downloads/ode-0.16.5.tar.gz
-            ${CMAKE_CURRENT_SOURCE_DIR}/ode-0.16.5.tar.gz
-        )
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/ode-0.16.5.tar.gz --one-top-level=ode_download --strip-components 1
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        )
-    endif()
+      # Ensure the target directory exists
+      file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
 
-    # Ensure that ODE library source files are available
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ode_download/CMakeLists.txt")
-        message(FATAL_ERROR "CMakeLists.txt not found in ode_download directory.")
+      # Extract the archive
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/ode-0.16.5.tar.gz
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/ode_download
+      )
     endif()
 
     # Define the output directory of the built library
     set(ODE_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/ode_build")
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
-    else()
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/libode.so*")
-    endif()
-    
+
+    # External project for building
     ExternalProject_Add(
         ODE
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ode_build
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode_download  # Set the source directory
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/ode_download
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -DODE_WITH_OU=ON
                                            -DODE_DOUBLE_PRECISION=ON
                                            -DODE_WITH_LIBCCD=ON
@@ -100,21 +88,34 @@ if(ENABLE_ODE)
                                            -DODE_WITH_DEMOS=OFF
                                            -DODE_WITH_TESTS=OFF
                                            -DBUILD_SHARED_LIBS=ON                                           
-                                           -S ${CMAKE_CURRENT_SOURCE_DIR}/ode_download
-                                           -B ${CMAKE_CURRENT_BINARY_DIR}/ode_build
-        BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/ode_build
+                                           -S ${CMAKE_SOURCE_DIR}/ode_download
+                                           -B ${ODE_OUTPUT_DIR}
+        BUILD_COMMAND ${CMAKE_COMMAND} --build ${ODE_OUTPUT_DIR}
         INSTALL_COMMAND ""  # Skip the install step
     )
-    # Custom command to copy the shared library after the build is complete
-    add_custom_command(
-      TARGET ODE POST_BUILD
+
+    # Locate the generated library after build
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
+    else()
+      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/libode.so*")
+    endif()
+
+    # Define a custom target for copying the library
+    add_custom_target(copy_ode_lib ALL
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ODE_LIB_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/lib/ || true
-      COMMENT "Copying ODE shared library to ${CMAKE_CURRENT_SOURCE_DIR}/lib (non-fatal)"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ODE_LIB_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/lib/
+      COMMENT "Copying ODE shared library to ${CMAKE_CURRENT_SOURCE_DIR}/lib"
+      VERBATIM
     )
+
+    # Ensure `copy_ode_lib` runs after `ODE` build
+    add_dependencies(copy_ode_lib ODE)
 endif()
 
-# Set the library based on the compiler
+# Link the ODE library
 set(ODE_LIB ${ODE_LIB_FILE})
 
 list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++ m)
