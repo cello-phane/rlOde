@@ -17,7 +17,6 @@ MESSAGE( STATUS "CXX Compiler ----> ${CMAKE_CXX_COMPILER_ID}")
 # set lib and include paths
 set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)#include path for ode is in a subdir
-set(CPP_INCLUDE_DIR "/usr/include/c++/14.1.0/x86_64-t2-linux-gnu /usr/include/c++/14.1.0")
 
 # Add the current source directory to the module search path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -116,7 +115,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${RL_INCLUDE_DIR}
     ${ODE_INCLUDE_DIR}
-    ${CPP_INCLUDE_DIR}
   )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES})
