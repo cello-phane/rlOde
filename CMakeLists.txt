@@ -94,7 +94,7 @@ if(ENABLE_ODE)
 endif()
 
 # Link the ODE library
-set(ODE_LIB ${ODE_LIB_FILE})
+set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
 
 list(APPEND PROJECT_LIBRARIES ${RAYLIB_LIB} ${ODE_LIB} stdc++ m)
 
