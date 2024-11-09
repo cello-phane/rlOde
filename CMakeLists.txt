@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.27.5)
+cmake_minimum_required(VERSION 3.5)
 
 set(PROJECT_NAME "rlOde")
 
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-
 # Output to terminal
 if(CMAKE_CL_64)
     MESSAGE( STATUS "-------- 64-bit ---------")
@@ -18,43 +17,41 @@ MESSAGE( STATUS "CXX Compiler ----> ${CMAKE_CXX_COMPILER_ID}")
 # set lib and include paths
 set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)#raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)#include path for ode is in a subdir
-# set(CPP_INCLUDE_DIR "/usr/include/c++/14.1.0/x86_64-t2-linux-gnu /usr/include/c++/14.1.0")
+set(CPP_INCLUDE_DIR "/usr/include/c++/14.1.0/x86_64-t2-linux-gnu /usr/include/c++/14.1.0")
 
-# set ON to download and compile Raylib lib
-set(FETCH_RL OFF)
-if(NOT FETCH_RL)
-find_library(raylib libraylib)
-  #-----Manually set Raylib-----#
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylib.lib)
-  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylib.lib)
-  else()
-    set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
-  endif()
-else()
-  #---------Fetch Raylib--------#
-  include(FetchContent)
-  set(FETCHCONTENT_QUIET FALSE)
-  set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
-  FetchContent_Declare(
-    raylib
-    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-    GIT_TAG "master"
-    GIT_PROGRESS TRUE
-  )
-  FetchContent_MakeAvailable(raylib)
-  set(RAYLIB_LIB raylib)
-endif()
+# Add the current source directory to the module search path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
 include(ExternalProject)
+
+# set ON to download and compile Raylib lib
+set(FETCH_RL ON)
+if(FETCH_RL)
+      file(DOWNLOAD 
+        https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_linux_amd64.tar.gz
+        ${CMAKE_SOURCE_DIR}/lib/raylib-5.0_linux_amd64.tar.gz
+      )
+
+      # Ensure the target directory exists
+      file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+
+      # Extract the archive
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/raylib-5.0_linux_amd64.tar.gz
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/raylib-5.0_linux_amd64
+        COMMAND ${CMAKE_COMMAND} -E copa_directory $WORKING_DIRECTORY/include/raylib ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib
+        COMMAND ${CMAKE_COMMAND} -E copy $WORKING_DIRECTORY/lib/libraylib.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a
+      )
+endif()
+# statically link raylib
+set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
 
 if(ENABLE_ODE)
     # Download and extract ODE only if `ode_download` is empty
-    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/CMakeLists.txt")
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/ode-0.16.5")
       message("ODE download directory is empty. Downloading and extracting ODE...")
       
       # Download the ODE archive
@@ -63,13 +60,10 @@ if(ENABLE_ODE)
         ${CMAKE_SOURCE_DIR}/ode-0.16.5.tar.gz
       )
 
-      # Ensure the target directory exists
-      file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
-
       # Extract the archive
       execute_process(
         COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/ode-0.16.5.tar.gz
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/ode_download
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/ode_download/ode-0.16.5
       )
     endif()
 
@@ -80,7 +74,7 @@ if(ENABLE_ODE)
     ExternalProject_Add(
         ODE
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ode_build
-        SOURCE_DIR ${CMAKE_SOURCE_DIR}/ode_download
+        SOURCE_DIR ${CMAKE_SOURCE_DIR}/ode_download/ode-0.16.5
         CONFIGURE_COMMAND ${CMAKE_COMMAND} -DODE_WITH_OU=ON
                                            -DODE_DOUBLE_PRECISION=ON
                                            -DODE_WITH_LIBCCD=ON
@@ -88,31 +82,16 @@ if(ENABLE_ODE)
                                            -DODE_WITH_DEMOS=OFF
                                            -DODE_WITH_TESTS=OFF
                                            -DBUILD_SHARED_LIBS=ON                                           
-                                           -S ${CMAKE_SOURCE_DIR}/ode_download
+                                           -S ${CMAKE_SOURCE_DIR}/ode_download/ode-0.16.5
                                            -B ${ODE_OUTPUT_DIR}
         BUILD_COMMAND ${CMAKE_COMMAND} --build ${ODE_OUTPUT_DIR}
         INSTALL_COMMAND ""  # Skip the install step
     )
 
-    # Locate the generated library after build
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/ode_double.so*")
-    else()
-      file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/libode.so*")
-    endif()
-
-    # Define a custom target for copying the library
-    add_custom_target(copy_ode_lib ALL
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ODE_LIB_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/lib/
-      COMMENT "Copying ODE shared library to ${CMAKE_CURRENT_SOURCE_DIR}/lib"
-      VERBATIM
+    file(GLOB ODE_LIB_FILE "${ODE_OUTPUT_DIR}/libode.so*")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E copy ${ODE_LIB_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/lib
     )
-
-    # Ensure `copy_ode_lib` runs after `ODE` build
-    add_dependencies(copy_ode_lib ODE)
 endif()
 
 # Link the ODE library
@@ -137,7 +116,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${RL_INCLUDE_DIR}
     ${ODE_INCLUDE_DIR}
-    # ${CPP_INCLUDE_DIR}
+    ${CPP_INCLUDE_DIR}
   )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES})
