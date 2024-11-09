@@ -38,7 +38,7 @@ if(FETCH_RL)
       execute_process(
         COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/raylib-5.0_linux_amd64.tar.gz
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/raylib-5.0_linux_amd64
-        COMMAND ${CMAKE_COMMAND} -E copa_directory $WORKING_DIRECTORY/include/raylib ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib
+        COMMAND ${CMAKE_COMMAND} -E copy_directory $WORKING_DIRECTORY/include/raylib ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib
         COMMAND ${CMAKE_COMMAND} -E copy $WORKING_DIRECTORY/lib/libraylib.a ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a
       )
 endif()
