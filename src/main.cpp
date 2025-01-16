@@ -22,7 +22,7 @@
  */
 
 #include <array>
-#include <gametimer.h>
+#include <gameTimer.h>
 #include <thread>
 bool in_callback = false;
 
