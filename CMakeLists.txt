@@ -70,9 +70,10 @@ option(ENABLE_ODE "Enable building ODE library" ON)
 set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
 set(ODE_DOWNLOAD_FILENAME ode-0.16.5.tar.gz)
 set(ODE_FOLDER_NAME ode-0.16.5)
+set(ODE_VERSION 0.16.5)
 
 # Define ODE_LIB as the destination path
-set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so.${ODE_VERSION})
 
 if(ENABLE_ODE)
     # Create the ode_download directory
@@ -111,13 +112,11 @@ if(ENABLE_ODE)
         BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
         INSTALL_COMMAND ""  # Skip the install step
     )
-
     # Make sure the lib directory exists
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
     # Define the build location (source for copy)
-    set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/ode_build/lib/libode.so")
-    
+    set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/ode_build/src/ODE-build/libode.so.${ODE_VERSION}")
     add_custom_command(
         TARGET ODE
         POST_BUILD
@@ -126,7 +125,6 @@ if(ENABLE_ODE)
             "${ODE_LIB}"        # Destination path
         COMMENT "Copying ODE library to project lib directory"
     )
-
 endif()
 
 
