@@ -67,6 +67,7 @@ endif()
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
 set(ODE_LIB "")
+set(ODE_INCLUDE_DIR "")
 if(ENABLE_ODE)
     file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
     # Define ODE_LIB as the destination path
@@ -154,9 +155,7 @@ set(PROJECT_LIBRARIES
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${RL_INCLUDE_DIR}
-    if(ENABLE_ODE)
-        ${ODE_INCLUDE_DIR}
-    endif()
+    ${ODE_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES})
