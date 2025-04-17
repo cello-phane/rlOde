@@ -22,6 +22,13 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
 include(ExternalProject)
 
+# For statically linking raylib
+# set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+# For dynamically linking raylib
+set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so)
+# Define ODE_LIB as the destination path
+set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+
 # set ON to download and compile Raylib lib
 set(FETCH_RL ON)
 set(RAYLIB_URL_PREFIX https://github.com/raysan5/raylib/releases/download/5.0)
@@ -58,20 +65,12 @@ if(FETCH_RL)
     )
 endif()
 
-# For statically linking raylib
-# set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
-# For dynamically linking raylib
-set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so.${RAYLIB_VERSION})
-
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
 set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
 set(ODE_DOWNLOAD_FILENAME ode-0.16.5.tar.gz)
 set(ODE_FOLDER_NAME ode-0.16.5)
 set(ODE_VERSION 0.16.5)
-
-# Define ODE_LIB as the destination path
-set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so.${ODE_VERSION})
 
 if(ENABLE_ODE)
     # Download and extract ODE only if it doesn't exist
@@ -109,17 +108,16 @@ if(ENABLE_ODE)
     )
 
     # Define the build location (source for copy)
-    set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/ode_build/src/ODE-build/libode.so.${ODE_VERSION}")
+    set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/libode.so.${ODE_VERSION}")
     add_custom_command(
         TARGET ODE
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        COMMAND ${CMAKE_COMMAND} -E copy
             "${ODE_BUILD_LIB}"  # Source path
             "${ODE_LIB}"        # Destination path
         COMMENT "Copying ODE library to project lib directory"
     )
 endif()
-
 
 # Source files
 set(PROJECT_SOURCES
