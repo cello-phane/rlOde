@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.5)
 
 set(PROJECT_NAME "rlOde")
 
@@ -135,25 +135,25 @@ if(ENABLE_ODE)
         INSTALL_COMMAND ""  # Skip the install step
     )
 
-    #~ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        #~ add_custom_command(
-            #~ TARGET ODE
-            #~ POST_BUILD
-            #~ COMMAND ${CMAKE_COMMAND} -E copy
-	    	#~ "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Debug/ode_doubled.dll"
-	    	#~ "${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.dll"
-        #~ COMMENT "Copying ODE library to project lib directory"
-        #~ )
-    #~ else()
-        #~ add_custom_command(
-            #~ TARGET ODE
-            #~ POST_BUILD
-			#~ COMMAND ${CMAKE_COMMAND} -E copy
-			#~ "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
-			#~ "${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
-        #~ COMMENT "Copying ODE library to project lib directory"
-        #~ )
-    #~ endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_custom_command(
+            TARGET ODE
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Debug/ode_doubled.lib"
+	    	"${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib"
+        COMMENT "Copying ODE library to project lib directory"
+        )
+    else()
+        add_custom_command(
+            TARGET ODE
+            POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+			"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
+			"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
+        COMMENT "Copying ODE library to project lib directory"
+        )
+    endif()
 endif()
 
 # Source files
