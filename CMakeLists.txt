@@ -8,6 +8,15 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Check platforms
+if (CMAKE_HOST_WIN32)
+    set(WINDOWS 1)
+elseif(CMAKE_HOST_APPLE)
+    set(MACOS 1)
+elseif(CMAKE_HOST_UNIX)
+    set(LINUX 1)
+endif()
+
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib")
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/raylib_download")
@@ -24,12 +33,21 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 include(ExternalProject)
 
 # For statically linking raylib
-# set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+#if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+#	set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+#else()
+#	set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+#endif()
+
 # For dynamically linking raylib
-set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylibdll.lib)
+else()
+	set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so)
+endif()
 
 # set ON to download and compile Raylib lib
-set(FETCH_RL ON)
+set(FETCH_RL OFF)
 set(RAYLIB_URL_PREFIX https://github.com/raysan5/raylib/releases/download/5.0)
 set(RAYLIB_DOWNLOAD_FILENAME raylib-5.0_linux_amd64.tar.gz)
 set(RAYLIB_FOLDER_NAME raylib-5.0_linux_amd64)
@@ -71,7 +89,11 @@ set(ODE_INCLUDE_DIR "")
 if(ENABLE_ODE)
     file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
     # Define ODE_LIB as the destination path
-    set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+		if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+			set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.dll)
+		else()
+			set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+		endif()
     set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
 
     set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
@@ -109,18 +131,29 @@ if(ENABLE_ODE)
                   -DODE_WITH_DEMOS=OFF
                   -DODE_WITH_TESTS=OFF
                   -DBUILD_SHARED_LIBS=ON
-                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build
+                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build --config=Release
         INSTALL_COMMAND ""  # Skip the install step
     )
 
-    add_custom_command(
-        TARGET ODE
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
-            "${ODE_LIB}"        # Destination path
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_custom_command(
+            TARGET ODE
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Release"
+	    	"${CMAKE_SOURCE_DIR}/lib"        # Destination path
         COMMENT "Copying ODE library to project lib directory"
-    )
+        )
+    else()
+        add_custom_command(
+            TARGET ODE
+            POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy
+			"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
+			"${ODE_LIB}"
+        COMMENT "Copying ODE library to project lib directory"
+        )
+    endif()
 endif()
 
 # Source files
