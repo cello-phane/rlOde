@@ -47,7 +47,7 @@ else()
 endif()
 
 # set ON to download and compile Raylib lib
-set(FETCH_RL OFF)
+option(FETCH_RL ON)
 set(RAYLIB_URL_PREFIX https://github.com/raysan5/raylib/releases/download/5.0)
 set(RAYLIB_DOWNLOAD_FILENAME raylib-5.0_linux_amd64.tar.gz)
 set(RAYLIB_FOLDER_NAME raylib-5.0_linux_amd64)
