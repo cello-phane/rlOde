@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.16)
 
 set(PROJECT_NAME "rlOde")
@@ -10,11 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib")
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/raylib_download")
-file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
 
 # set lib and include paths
 set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)  # raylib is inside the "include" dir
-set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
+
+#Turn this off if necessary
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Add the current source directory to the module search path
@@ -26,8 +27,6 @@ include(ExternalProject)
 # set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
 # For dynamically linking raylib
 set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so)
-# Define ODE_LIB as the destination path
-set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
 
 # set ON to download and compile Raylib lib
 set(FETCH_RL ON)
@@ -67,12 +66,18 @@ endif()
 
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
-set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
-set(ODE_DOWNLOAD_FILENAME ode-0.16.5.tar.gz)
-set(ODE_FOLDER_NAME ode-0.16.5)
-set(ODE_VERSION 0.16.5)
-
+set(ODE_LIB "")
 if(ENABLE_ODE)
+    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
+    # Define ODE_LIB as the destination path
+    set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+    set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
+
+    set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
+    set(ODE_DOWNLOAD_FILENAME ode-0.16.5.tar.gz)
+    set(ODE_FOLDER_NAME ode-0.16.5)
+    set(ODE_VERSION 0.16.5)
+
     # Download and extract ODE only if it doesn't exist
     if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/${ODE_FOLDER_NAME}")
         message(STATUS "Downloading ODE...")
@@ -149,7 +154,9 @@ set(PROJECT_LIBRARIES
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${RL_INCLUDE_DIR}
-    ${ODE_INCLUDE_DIR}
+    if(ENABLE_ODE)
+        ${ODE_INCLUDE_DIR}
+    endif()
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_LIBRARIES})
