@@ -86,14 +86,14 @@ endif()
 option(ENABLE_ODE "Enable building ODE library" ON)
 set(ODE_LIB "")
 set(ODE_INCLUDE_DIR "")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
+else()
+	set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+endif()
 if(ENABLE_ODE)
     file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
     # Define ODE_LIB as the destination path
-		if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-			set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.dll)
-		else()
-			set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
-		endif()
     set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
 
     set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
@@ -131,29 +131,29 @@ if(ENABLE_ODE)
                   -DODE_WITH_DEMOS=OFF
                   -DODE_WITH_TESTS=OFF
                   -DBUILD_SHARED_LIBS=ON
-                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build --config=Release
+                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build
         INSTALL_COMMAND ""  # Skip the install step
     )
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        add_custom_command(
-            TARGET ODE
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Release"
-	    	"${CMAKE_SOURCE_DIR}/lib"        # Destination path
-        COMMENT "Copying ODE library to project lib directory"
-        )
-    else()
-        add_custom_command(
-            TARGET ODE
-            POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy
-			"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
-			"${ODE_LIB}"
-        COMMENT "Copying ODE library to project lib directory"
-        )
-    endif()
+    #~ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        #~ add_custom_command(
+            #~ TARGET ODE
+            #~ POST_BUILD
+            #~ COMMAND ${CMAKE_COMMAND} -E copy
+	    	#~ "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Debug/ode_doubled.dll"
+	    	#~ "${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.dll"
+        #~ COMMENT "Copying ODE library to project lib directory"
+        #~ )
+    #~ else()
+        #~ add_custom_command(
+            #~ TARGET ODE
+            #~ POST_BUILD
+			#~ COMMAND ${CMAKE_COMMAND} -E copy
+			#~ "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
+			#~ "${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
+        #~ COMMENT "Copying ODE library to project lib directory"
+        #~ )
+    #~ endif()
 endif()
 
 # Source files
@@ -176,12 +176,16 @@ if(ENABLE_ODE)
     add_dependencies(${PROJECT_NAME} ODE)
 endif()
 
+set(ADDITIONAL_LIBS m pthread)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(ADDITIONAL_LIBS "")
+endif()
+
 # Set libraries to link
 set(PROJECT_LIBRARIES
     ${RAYLIB_LIB}
     ${ODE_LIB}
-    m
-    pthread
+    ${ADDITIONAL_LIBS}
 )
 
 # Include and link
