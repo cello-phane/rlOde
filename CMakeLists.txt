@@ -7,6 +7,11 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib")
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/raylib_download")
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
+
 # set lib and include paths
 set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)  # raylib is inside the "include" dir
 set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
@@ -22,12 +27,10 @@ set(FETCH_RL ON)
 set(RAYLIB_URL_PREFIX https://github.com/raysan5/raylib/releases/download/5.0)
 set(RAYLIB_DOWNLOAD_FILENAME raylib-5.0_linux_amd64.tar.gz)
 set(RAYLIB_FOLDER_NAME raylib-5.0_linux_amd64)
+set(RAYLIB_VERSION 5.0.0)
 if(FETCH_RL)
-    # Create lib directory if it doesn't exist
-    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
-
     # Download Raylib
-    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/lib/${RAYLIB_DOWNLOAD_FILENAME}")
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_DOWNLOAD_FILENAME}")
         message(STATUS "Downloading Raylib...")
         file(DOWNLOAD
             ${RAYLIB_URL_PREFIX}/${RAYLIB_DOWNLOAD_FILENAME}
@@ -35,35 +38,30 @@ if(FETCH_RL)
             SHOW_PROGRESS
         )
     endif()
-
-    # Create extraction directory
-    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/lib/raylib_extracted")
-
     # Extract the archive
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/lib/${RAYLIB_DOWNLOAD_FILENAME}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/raylib_extracted
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/raylib_download
     )
-
-    # Create include directory if it doesn't exist
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib")
 
     # Copy extracted files to the appropriate locations
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/lib/raylib_extracted/${RAYLIB_FOLDER_NAME}/include"
+            "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/include"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib"
     )
 
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_SOURCE_DIR}/lib/raylib_extracted/${RAYLIB_FOLDER_NAME}/lib/libraylib.a"
-            "${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/lib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     )
 endif()
 
 # For statically linking raylib
-set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+# set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
+# For dynamically linking raylib
+set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so.${RAYLIB_VERSION})
 
 # Add an option to enable the ODE library
 option(ENABLE_ODE "Enable building ODE library" ON)
@@ -76,9 +74,6 @@ set(ODE_VERSION 0.16.5)
 set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so.${ODE_VERSION})
 
 if(ENABLE_ODE)
-    # Create the ode_download directory
-    file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
-
     # Download and extract ODE only if it doesn't exist
     if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/${ODE_FOLDER_NAME}")
         message(STATUS "Downloading ODE...")
@@ -112,8 +107,6 @@ if(ENABLE_ODE)
         BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
         INSTALL_COMMAND ""  # Skip the install step
     )
-    # Make sure the lib directory exists
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
     # Define the build location (source for copy)
     set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/ode_build/src/ODE-build/libode.so.${ODE_VERSION}")
