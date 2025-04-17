@@ -94,7 +94,7 @@ if(ENABLE_ODE)
     # External project for building ODE
     ExternalProject_Add(
         ODE
-        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ode_build
+        PREFIX ${CMAKE_SOURCE_DIR}/ode_download/ode_build
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/ode_download/${ODE_FOLDER_NAME}
         CMAKE_ARGS -DODE_WITH_OU=ON
                   -DODE_DOUBLE_PRECISION=ON
@@ -103,17 +103,15 @@ if(ENABLE_ODE)
                   -DODE_WITH_DEMOS=OFF
                   -DODE_WITH_TESTS=OFF
                   -DBUILD_SHARED_LIBS=ON
-        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
+                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build
         INSTALL_COMMAND ""  # Skip the install step
     )
 
-    # Define the build location (source for copy)
-    set(ODE_BUILD_LIB "${CMAKE_CURRENT_BINARY_DIR}/libode.so.${ODE_VERSION}")
     add_custom_command(
         TARGET ODE
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-            "${ODE_BUILD_LIB}"  # Source path
+            "${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
             "${ODE_LIB}"        # Destination path
         COMMENT "Copying ODE library to project lib directory"
     )
