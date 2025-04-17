@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.5)
 
 set(PROJECT_NAME "rlOde")
@@ -124,14 +123,16 @@ if(ENABLE_ODE)
         ODE
         PREFIX ${CMAKE_SOURCE_DIR}/ode_download/ode_build
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/ode_download/${ODE_FOLDER_NAME}
-        CMAKE_ARGS -DODE_WITH_OU=ON
+        CMAKE_ARGS -DODE_WITH_OU=OFF
                   -DODE_DOUBLE_PRECISION=ON
                   -DODE_WITH_LIBCCD=ON
                   -DODE_WITH_LIBCCD_BOX_CYL=ON
                   -DODE_WITH_DEMOS=OFF
                   -DODE_WITH_TESTS=OFF
                   -DBUILD_SHARED_LIBS=ON
-                  BUILD_COMMAND ${CMAKE_COMMAND} --build ${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build
+									-DODE_NO_THREADING_INTF=ON
+									-DODE_NO_BUILTIN_THREADING_IMPL=ON
+                  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR>
         INSTALL_COMMAND ""  # Skip the install step
     )
 
@@ -140,7 +141,7 @@ if(ENABLE_ODE)
             TARGET ODE
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Debug/ode_doubled.lib"
+	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Release/ode_double.lib"
 	    	"${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib"
         COMMENT "Copying ODE library to project lib directory"
         )
@@ -149,8 +150,12 @@ if(ENABLE_ODE)
             TARGET ODE
             POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy
+			#Dynamic/Shared lib:
 			"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
 			"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
+			#Static lib:
+			#"${CMAKE_SOURCE_DIR}/ode_download/ode-${ODE_VERSION}/ode/src/.libs/libode.a"
+			#"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a"
         COMMENT "Copying ODE library to project lib directory"
         )
     endif()
