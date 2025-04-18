@@ -26,14 +26,14 @@ set(RL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/raylib)  # raylib is insi
 # Options - the downloaded bits must match with versions/filenames to keep things synced when compiled
 # Raylib
 option(RAYLIB_STATIC "Enable static raylib(.a or dll.lib suffix)" ON)
-option(FETCH_RL "Enable downloading Raylib source" ON)
+option(FETCH_RL 	 "Enable downloading Raylib source" ON)
 set(RAYLIB_URL_PREFIX https://github.com/raysan5/raylib/releases/download/5.0)
 set(RAYLIB_DOWNLOAD_FILENAME raylib-5.0_linux_amd64.tar.gz)
 set(RAYLIB_FOLDER_NAME raylib-5.0_linux_amd64)
 set(RAYLIB_VERSION 5.0.0)
 # ODE
 option(ENABLE_ODE "Enable building ODE library" ON)
-option(FETCH_ODE "Enable downloading ODE source" ON)
+option(FETCH_ODE  "Enable downloading ODE source" ON)
 set(ODE_URL_PREFIX https://bitbucket.org/odedevs/ode/downloads)
 set(ODE_DOWNLOAD_FILENAME ode-0.16.5.tar.gz)
 set(ODE_FOLDER_NAME ode-0.16.5)
@@ -95,19 +95,20 @@ if(FETCH_RL)
 endif()
 
 # ODE
-set(ODE_LIB "")
-set(ODE_INCLUDE_DIR "")
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
+if(ENABLE_ODE)
+	set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib)
+	else()
+		set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+	endif()
 else()
-	set(ODE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so)
+	set(ODE_INCLUDE_DIR "")
+ 	set(ODE_LIB "")
 endif()
 
 if(FETCH_ODE)
     file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/ode_download")
-    # Define ODE_LIB as the destination path
-    set(ODE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ode/include)    # include path for ode is in a subdir
-
     # Download and extract ODE only if it doesn't exist
     if(NOT EXISTS "${CMAKE_SOURCE_DIR}/ode_download/${ODE_FOLDER_NAME}")
         message(STATUS "Downloading ODE...")
@@ -178,17 +179,11 @@ set(PROJECT_SOURCES
 # Add executable
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 
-# Add dependency on ODE to ensure it's built before the main project
-if(ENABLE_ODE)
-    add_dependencies(${PROJECT_NAME} ODE)
-endif()
-
+# Set libraries to link
 set(ADDITIONAL_LIBS m pthread)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(ADDITIONAL_LIBS "")
 endif()
-
-# Set libraries to link
 set(PROJECT_LIBRARIES
     ${RAYLIB_LIB}
     ${ODE_LIB}
