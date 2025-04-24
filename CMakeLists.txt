@@ -148,7 +148,7 @@ if(FETCH_ODE)
             TARGET ODE
             POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
-	    	"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Release/ode_double.lib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/Release/ode_double.lib"
 	    	"${CMAKE_CURRENT_SOURCE_DIR}/lib/ode_double.lib"
         COMMENT "Copying ODE library to project lib directory"
         )
@@ -157,12 +157,15 @@ if(FETCH_ODE)
             TARGET ODE
             POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy
-		#Dynamic/Shared lib:
-		"${CMAKE_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
+		    #Dynamic/Shared lib:
+            "${CMAKE_CURRENT_SOURCE_DIR}/ode_download/ode_build/src/ODE-build/libode.so.${ODE_VERSION}"
+		    "${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so.${ODE_VERSION}"
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+		    "${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so.${ODE_VERSION}" 
+		    "${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.so"
 		#Static lib:
-		#"${CMAKE_SOURCE_DIR}/ode_download/ode-${ODE_VERSION}/ode/src/.libs/libode.a"
-		#"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a"
+		    #"${CMAKE_SOURCE_DIR}/ode_download/ode-${ODE_VERSION}/ode/src/.libs/libode.a"
+		    #"${CMAKE_CURRENT_SOURCE_DIR}/lib/libode.a"
         COMMENT "Copying ODE library to project lib directory"
         )
     endif()
