@@ -52,45 +52,44 @@ include(ExternalProject)
 if(RATLIB_STATIC)
 	# For statically linking raylib
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-		set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylib.lib)
+        set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylib.lib)
 	else()
 		set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.a)
 	endif()
 else()
 	# For dynamically linking raylib
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-		set(RAYLIB_LIB ${CMAKE_SOURCE_DIR}/lib/raylibdll.lib)
+        set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/raylibdll.lib)
 	else()
 		set(RAYLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/lib/libraylib.so)
 	endif()
- endif()
+endif()
 
 if(FETCH_RL)
     # Download Raylib
-    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_DOWNLOAD_FILENAME}")
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/raylib_download/${RAYLIB_DOWNLOAD_FILENAME}")
         message(STATUS "Downloading Raylib...")
         file(DOWNLOAD
             ${RAYLIB_URL_PREFIX}/${RAYLIB_DOWNLOAD_FILENAME}
-            ${CMAKE_SOURCE_DIR}/lib/${RAYLIB_DOWNLOAD_FILENAME}
+            ${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_DOWNLOAD_FILENAME}
             SHOW_PROGRESS
         )
     endif()
     # Extract the archive
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_SOURCE_DIR}/lib/${RAYLIB_DOWNLOAD_FILENAME}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/raylib_download
+        COMMAND ${CMAKE_COMMAND} -E tar xzf "${CMAKE_CURRENT_SOURCE_DIR}/raylib_download/${RAYLIB_DOWNLOAD_FILENAME}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/raylib_download"
     )
     # Copy extracted files to the appropriate locations
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/include"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/raylib"
     )
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/lib"
-            "${CMAKE_CURRENT_SOURCE_DIR}/lib"
-    COMMENT "Copying Raylib library to project lib directory"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+        "${CMAKE_CURRENT_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/lib"
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     )
 endif()
 
