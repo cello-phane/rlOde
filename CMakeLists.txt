@@ -90,8 +90,8 @@ if(FETCH_RL)
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${CMAKE_SOURCE_DIR}/raylib_download/${RAYLIB_FOLDER_NAME}/lib"
             "${CMAKE_CURRENT_SOURCE_DIR}/lib"
-    )
     COMMENT "Copying Raylib library to project lib directory"
+    )
 endif()
 
 # ODE
